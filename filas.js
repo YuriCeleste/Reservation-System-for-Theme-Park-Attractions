@@ -1,4 +1,5 @@
 const db = require('./db');
+const FilaEncadeada = require('./fila-encadeada');
 
 // "npm run demo" ignora a hora real (útil para apresentar fora do horário das sessões)
 const SEM_HORA = process.argv.includes('--sem-hora');
@@ -14,12 +15,26 @@ function idade(nasc) {
   return t.getFullYear() - y - (t < new Date(t.getFullYear(), m - 1, d) ? 1 : 0);
 }
 
-// Fila de uma atração em um horário: VIP primeiro, depois ordem de chegada.
-const fila = (atracaoId, horario) => db.prepare(`
-  SELECT r.id, r.visitante_id, v.nome FROM reservas r
-  JOIN visitantes v ON v.id = r.visitante_id
-  WHERE r.atracao_id = ? AND r.horario = ? AND r.status = 'aguardando'
-  ORDER BY r.vip DESC, r.id`).all(atracaoId, horario);
+// Uma FilaEncadeada em memória para cada atração + horário.
+// Na primeira vez que a fila é usada, ela é reconstruída a partir das reservas
+// 'aguardando' do banco, na ordem de chegada (id), o que reproduz a mesma ordem de antes.
+const filas = new Map();
+
+function getFila(atracaoId, horario) {
+  const chave = `${atracaoId}|${horario}`;
+  if (!filas.has(chave)) {
+    const q = new FilaEncadeada();
+    db.prepare(`SELECT r.id, r.visitante_id, r.vip, v.nome FROM reservas r
+      JOIN visitantes v ON v.id = r.visitante_id
+      WHERE r.atracao_id = ? AND r.horario = ? AND r.status = 'aguardando'
+      ORDER BY r.id`).all(atracaoId, horario).forEach(r => q.enfileirar(r));
+    filas.set(chave, q);
+  }
+  return filas.get(chave);
+}
+
+// Mesma interface de antes: lista na ordem da fila (VIP primeiro, depois ordem de chegada).
+const fila = (atracaoId, horario) => getFila(atracaoId, horario).paraArray();
 
 // Retorna uma mensagem de erro, ou undefined se deu certo.
 function entrar(visitanteId, atracaoId, horario) {
@@ -30,8 +45,9 @@ function entrar(visitanteId, atracaoId, horario) {
   if (!horarioAberto(horario)) return 'Esse horário já passou.';
   if (fila(a.id, horario).some(r => r.visitante_id === v.id)) return 'Você já está nessa fila.';
   const vip = a.vip && v.ingresso === 'vip' ? 1 : 0; // sem fila VIP, o VIP entra como normal
-  db.prepare('INSERT INTO reservas (visitante_id, atracao_id, horario, vip, entrou_em) VALUES (?,?,?,?,?)')
+  const r = db.prepare('INSERT INTO reservas (visitante_id, atracao_id, horario, vip, entrou_em) VALUES (?,?,?,?,?)')
     .run(v.id, a.id, horario, vip, agora());
+  getFila(a.id, horario).enfileirar({ id: r.lastInsertRowid, visitante_id: v.id, nome: v.nome, vip }); // entra na fila encadeada
 }
 
 // Sessão que o botão EMBARCAR vai chamar: o próximo horário (a partir de agora) com gente esperando.
@@ -45,10 +61,13 @@ function embarcar(atracaoId) {
   const a = db.prepare('SELECT * FROM atracoes WHERE id = ?').get(atracaoId);
   const h = a && sessao(atracaoId);
   if (!h) return null;
-  const quem = fila(atracaoId, h).slice(0, a.capacidade);
+  const q = getFila(atracaoId, h);
   const up = db.prepare("UPDATE reservas SET status = 'concluida', embarcou_em = ? WHERE id = ?");
-  db.transaction(() => quem.forEach(r => up.run(agora(), r.id)))();
-  return { horario: h, total: quem.length };
+  let total = 0;
+  db.transaction(() => {
+    for (let r; total < a.capacidade && (r = q.desenfileirar()); total++) up.run(agora(), r.id); // sai da fila encadeada
+  })();
+  return { horario: h, total };
 }
 
 function painelVisitante(v) {
