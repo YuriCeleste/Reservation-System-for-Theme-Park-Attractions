@@ -2,7 +2,7 @@
 const db = require('./db');
 const { agora } = require('./filas');
 
-db.exec('DELETE FROM reservas; DELETE FROM visitantes; DELETE FROM atracoes;');
+db.exec('DELETE FROM reservas; DELETE FROM visitantes; DELETE FROM atracoes; DELETE FROM sqlite_sequence;');
 
 const atr = db.prepare('INSERT INTO atracoes (nome, tipo, capacidade, idade_minima, horarios, vip) VALUES (?,?,?,?,?,?)');
 [['Trem do Terror', 'trem fantasma', 4, 12, '09:00,14:00,18:00', 1],
