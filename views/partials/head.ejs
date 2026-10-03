@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Parque do Terror</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="nav">
+  <a class="logo" href="/" aria-label="Início">🎡</a>
+  <a href="/atracoes" class="<%= aba === 'atracoes' ? 'on' : '' %>">Atrações</a>
+  <a href="/visitantes" class="<%= aba === 'visitantes' ? 'on' : '' %>">Visitantes</a>
+  <a href="/metricas" class="<%= aba === 'metricas' ? 'on' : '' %>">Métricas</a>
+</header>
+<% if (aba === 'atracoes' || aba === 'visitantes') {
+  const subs = aba === 'atracoes'
+    ? [['/atracoes', 'cadastro', 'Cadastro das Atrações'], ['/atracoes/painel', 'painel', 'Painel de Controle do Parque']]
+    : [['/visitantes', 'cadastro', 'Cadastro de Visitantes'], ['/visitantes/painel', 'painel', 'Painel do Visitante']]; %>
+<nav class="sub">
+  <% subs.forEach(s => { %><a href="<%= s[0] %>" class="<%= sub === s[1] ? 'on' : '' %>"><%= s[2] %></a><% }) %>
+</nav>
+<% } %>
+<main class="<%= aba ? 'cinza' : '' %>">

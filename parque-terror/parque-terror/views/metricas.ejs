@@ -1,0 +1,27 @@
+<%- include('partials/head') %>
+<h2 style="text-align:center;font-weight:400;text-decoration:underline">Métricas e Estatísticas</h2>
+<div class="metricas">
+  <section class="card">
+    <h3>Reservas feitas no dia</h3>
+    <% const pc = s.total ? Math.round(s.comuns / s.total * 100) : 0; %>
+    <div class="pizza" role="img" aria-label="<%= s.comuns %> reservas comuns e <%= s.vip %> VIP"
+         style="<%= s.total ? `background: conic-gradient(#5b6bb5 0 ${pc}%, #2fe8d9 ${pc}% 100%)` : '' %>"></div>
+    <p class="legenda">
+      <span style="background:#5b6bb5"></span><%= s.comuns %> reservas comuns<br>
+      <span style="background:#2fe8d9"></span><%= s.vip %> reservas VIP
+    </p>
+  </section>
+  <section class="card">
+    <h3>Atração mais disputada</h3>
+    <strong><%= s.topA ? s.topA.nome : 'Sem reservas hoje' %></strong>
+    <div class="trofeu">🏆</div>
+    <% if (s.topA) { %><span class="destaque"><%= s.topA.n %> reservas</span><% } %>
+  </section>
+  <section class="card">
+    <h3>Visitante do dia</h3>
+    <strong><%= s.topV ? s.topV.nome : 'Sem reservas hoje' %></strong>
+    <div class="trofeu">🏆</div>
+    <% if (s.topV) { %><span class="destaque"><%= s.topV.n %> reservas</span><% } %>
+  </section>
+</div>
+<%- include('partials/foot') %>

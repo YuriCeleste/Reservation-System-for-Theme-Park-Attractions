@@ -1,0 +1,26 @@
+<%- include('../partials/head') %>
+<div class="card larga">
+  <h3>Pessoas na fila por atração</h3>
+  <% if (msg) { %><p class="ok"><%= msg %></p><% } %>
+  <table>
+    <tr><th>Atração/Evento</th><th>Pessoas na fila</th><th>Próximos a embarcar</th><th>Chamada para sessão</th></tr>
+    <% linhas.forEach(l => { %>
+      <tr>
+        <td><%= l.nome %><br><small>capacidade: <%= l.capacidade %></small></td>
+        <td><%= l.total %></td>
+        <td>
+          <% if (!l.sessao) { %>—<% } else { %>
+            <small>Sessão das <%= l.sessao.replace(':', 'h') %></small><br>
+            <% l.proximos.forEach((p, i) => { %><%= i + 1 %>º <%= p.nome %><br><% }) %>
+          <% } %>
+        </td>
+        <td>
+          <form method="post" action="/atracoes/<%= l.id %>/embarcar">
+            <button class="pill" <%= l.sessao ? '' : 'disabled' %>>EMBARCAR</button>
+          </form>
+        </td>
+      </tr>
+    <% }) %>
+  </table>
+</div>
+<%- include('../partials/foot') %>

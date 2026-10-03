@@ -1,0 +1,53 @@
+<%- include('../partials/head') %>
+<form class="card" method="post" action="/visitantes" id="f">
+  <h2>Cadastro do Visitante</h2>
+  <% if (erro) { %><p class="erro"><%= erro %></p><% } %>
+  <label>Nome <input name="nome" value="<%= d.nome || '' %>" required></label>
+  <label>E-mail <input type="email" name="email" value="<%= d.email || '' %>" required></label>
+  <div class="duas">
+    <label>CPF <input name="cpf" inputmode="numeric" pattern="\d{11}" maxlength="11" title="11 dígitos, somente números" value="<%= d.cpf || '' %>" required></label>
+    <label>Data de nascimento <input type="date" name="nascimento" value="<%= d.nascimento || '' %>" required></label>
+  </div>
+  <fieldset>
+    <legend>Tipo de ingresso</legend>
+    <label><input type="radio" name="ingresso" value="normal" checked> Normal - R$ 100,00</label>
+    <label><input type="radio" name="ingresso" value="vip" id="vip" disabled> VIP (desbloqueado após adicionar cartão de crédito) - R$ 200,00</label>
+  </fieldset>
+  <p>Cartão de crédito (opcional): <button type="button" class="pill" id="addcartao">Adicionar cartão de crédito</button></p>
+
+  <dialog id="dlg">
+    <h2>Cartão de crédito</h2>
+    <label>Número <input name="cartao_numero" inputmode="numeric" maxlength="23" autocomplete="off"></label>
+    <div class="duas">
+      <label>Validade <input name="cartao_validade" placeholder="MM/AA" maxlength="5"></label>
+      <label>Nome no cartão <input name="cartao_nome"></label>
+    </div>
+    <p class="erro" id="cerro" hidden></p>
+    <div class="acoes">
+      <button type="button" class="pill" id="cancelar">Cancelar</button>
+      <button type="button" class="pill" id="confirmar">Confirmar cartão</button>
+    </div>
+  </dialog>
+
+  <button class="btn">Cadastrar</button>
+</form>
+<script>
+  const f = document.getElementById('f'), dlg = document.getElementById('dlg'), cerro = document.getElementById('cerro');
+  const vip = document.getElementById('vip'), add = document.getElementById('addcartao');
+  add.onclick = () => dlg.showModal();
+  document.getElementById('cancelar').onclick = () => dlg.close();
+  const confirmar = document.getElementById('confirmar');
+  confirmar.onclick = () => {
+    const n = f.cartao_numero.value.replace(/\D/g, '');
+    if (!/^\d{13,19}$/.test(n) || !/^\d{2}\/\d{2}$/.test(f.cartao_validade.value) || !f.cartao_nome.value.trim()) {
+      cerro.textContent = 'Confira o número, a validade (MM/AA) e o nome no cartão.';
+      cerro.hidden = false;
+      return;
+    }
+    vip.disabled = false;
+    add.textContent = 'Cartão final ' + n.slice(-4);
+    dlg.close();
+  };
+  dlg.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); confirmar.click(); } });
+</script>
+<%- include('../partials/foot') %>
