@@ -5,7 +5,7 @@ a { color: inherit; }
 
 .nav { display: flex; align-items: center; gap: 1rem; background: var(--roxo); padding: .6rem 1.2rem; }
 .nav a { flex: 1; text-align: center; color: #fff; text-decoration: none; padding: .35rem; }
-.nav a.on { outline: 1px solid #fff; flex: 0 0 8rem; }
+.nav a.on { color:yellow; width: 8rem; border-radius: 6px; }
 .nav .logo { flex: none; width: 44px; height: 44px; border-radius: 50%; background: #ddd; display: grid; place-items: center; font-size: 1.5rem; }
 .sub { display: flex; background: #d9d9d9; }
 .sub a { flex: 1; text-align: center; padding: .7rem; text-decoration: none; }
