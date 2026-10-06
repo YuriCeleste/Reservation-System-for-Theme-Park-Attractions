@@ -14,13 +14,13 @@
   <section class="card">
     <h3>Atração mais disputada</h3>
     <strong><%= s.topA ? s.topA.nome : 'Sem reservas hoje' %></strong>
-    <div class="trofeu">🏆</div>
+    <div class="trofeu"><img class="trofeu-img" src="Parque_Terror_Trofeu_Sombrio-E.png" alt="Trofeu Sombrio"></div>
     <% if (s.topA) { %><span class="destaque"><%= s.topA.n %> reservas</span><% } %>
   </section>
   <section class="card">
     <h3>Visitante do dia</h3>
     <strong><%= s.topV ? s.topV.nome : 'Sem reservas hoje' %></strong>
-    <div class="trofeu">🏆</div>
+    <div class="trofeu"><img class="trofeu-img" src="Parque_Terror_Trofeu_Dourado-E.png" alt="Trofeu Dourado"></div>
     <% if (s.topV) { %><span class="destaque"><%= s.topV.n %> reservas</span><% } %>
   </section>
 </div>
