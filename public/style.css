@@ -68,11 +68,18 @@ a { color: inherit; }
 .sub a:focus-visible, .nav a:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
 
 /* ===== Área principal ===== */
-main.cinza { background: var(--cinza); padding: 2rem 1rem; min-height: calc(100vh - 110px); }
+main.cinza {
+  background: var(--cinza);
+  padding: 2rem 1rem;
+  min-height: calc(100vh - 60px);
+  display: flex;
+  flex-direction: column;
+}
 
-/* ===== Hero (home): título → logo → descrição ===== */
+/* ===== Hero (home) ===== */
 .hero {
   position: relative;
+  flex: 1;
   min-height: calc(100vh - 60px);
   display: flex;
   flex-direction: column;
@@ -83,7 +90,6 @@ main.cinza { background: var(--cinza); padding: 2rem 1rem; min-height: calc(100v
   padding: 3rem 1.5rem;
   gap: 1.5rem;
   background:
-    /* Vinheta: escurece as bordas, cria o efeito de "corroendo" */
     radial-gradient(
       ellipse at center,
       transparent 0%,
@@ -314,7 +320,16 @@ dialog::backdrop { background: #0008; }
 dialog .acoes { display: flex; gap: .5rem; justify-content: flex-end; margin-top: 1rem; }
 
 /* ===== Métricas ===== */
-.metricas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; text-align: center; max-width: 900px; margin: 0 auto; }
+.metricas {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  text-align: center;
+  max-width: 900px;
+  margin: 0 auto;
+  flex: 1;
+  align-content: center;
+}
 
 .metricas .card {
   max-width: none;
@@ -346,7 +361,9 @@ dialog .acoes { display: flex; gap: .5rem; justify-content: flex-end; margin-top
 }
 .metricas p { color: var(--texto-claro); }
 
-main.cinza.fundo-tetot h2 {
+/* ===== Títulos das telas com fundo temático ===== */
+main.cinza.fundo-tetot h2,
+main.cinza.fundo-creditos h2 {
   font-family: "Cinzel Decorative", serif;
   color: #fff;
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
@@ -361,7 +378,8 @@ main.cinza.fundo-tetot h2 {
   width: fit-content;
 }
 
-main.cinza.fundo-tetot h2:hover {
+main.cinza.fundo-tetot h2:hover,
+main.cinza.fundo-creditos h2:hover {
   color: #fff;
   text-shadow:
     0 0 6px rgba(191, 147, 192, 0.6),
@@ -382,6 +400,7 @@ main.cinza.fundo-tetot h2:hover {
   .hero-logo { width: min(70vw, 280px); }
   .hero h1 { font-size: clamp(2rem, 10vw, 3.5rem); }
   .hero p { font-size: 0.8rem; letter-spacing: 0.12em; }
+  .cards-criadores { grid-template-columns: 1fr; }
 }
 
 /* ===== Fundo temático: Atrações (Teto) ===== */
@@ -397,6 +416,8 @@ main.cinza.fundo-teto {
   background-position: center 25%;
   background-repeat: no-repeat;
   background-attachment: fixed;
+  min-height: calc(100vh - 60px);
+  padding: 2rem 1rem;
 }
 
 /* ===== Fundo temático: Visitantes (Miku) ===== */
@@ -412,6 +433,8 @@ main.cinza.fundo-miku {
   background-position: center 25%;
   background-repeat: no-repeat;
   background-attachment: fixed;
+  min-height: calc(100vh - 60px);
+  padding: 2rem 1rem;
 }
 
 /* ===== Fundo temático: Métricas (Teto vermelha) ===== */
@@ -427,4 +450,201 @@ main.cinza.fundo-tetot {
   background-position: center 30%;
   background-repeat: no-repeat;
   background-attachment: fixed;
+  min-height: calc(100vh - 60px);
+  padding: 2rem 1rem;
+}
+
+/* ===== Fundo temático: Créditos (Miku + Teto) ===== */
+main.cinza.fundo-creditos {
+  background-color: #0d0a12;
+  background-image: linear-gradient(
+    180deg,
+    rgba(13, 10, 18, 0.55) 0%,
+    rgba(13, 10, 18, 0.75) 50%,
+    rgba(13, 10, 18, 0.92) 100%
+  ), url('/convite-macabro.png');
+  background-size: cover;
+  background-position: center 30%;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  min-height: calc(100vh - 60px);
+  padding: 0;
+}
+
+/* ===== Tela de Créditos ===== */
+.creditos {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 3rem 1rem;
+  color: var(--texto-claro);
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.creditos .subtitulo {
+  font-family: "Cinzel", serif;
+  font-size: 1rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--lil);
+  margin-bottom: 2rem;
+}
+
+.cards-criadores {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 240px));
+  gap: 1.5rem;
+  margin: 0 auto 2rem;
+  max-width: 900px;
+  justify-content: center;
+}
+
+.card-criador {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem 1rem;
+  background: linear-gradient(
+    180deg,
+    rgba(160, 160, 170, 0.9) 0%,
+    rgba(118, 47, 120, 0.95) 40%,
+    rgba(60, 18, 62, 0.98) 100%
+  );
+  border: 1px solid rgba(191, 147, 192, 0.4);
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--texto-claro);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-criador:hover {
+  transform: translateY(-6px) scale(1.03);
+  border-color: rgba(191, 147, 192, 0.9);
+  box-shadow:
+    0 0 16px rgba(191, 147, 192, 0.5),
+    0 0 32px rgba(118, 47, 120, 0.35),
+    0 10px 20px rgba(0, 0, 0, 0.5);
+}
+
+.card-criador .avatar {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  margin: 0 auto 0.8rem;
+  border: 3px solid rgba(191, 147, 192, 0.7);
+  background: #1a0f1f;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.card-criador:hover .avatar {
+  transform: scale(1.08);
+  border-color: rgba(191, 147, 192, 1);
+  box-shadow:
+    0 0 18px rgba(191, 147, 192, 0.7),
+    0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.card-criador h3 {
+  font-family: "Cinzel", serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.3rem;
+  color: #fff;
+  text-align: center;
+}
+
+.card-criador p {
+  font-size: 0.8rem;
+  margin: 0;
+  color: var(--lil);
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+.rodape-creditos {
+  font-family: "Cinzel", serif;
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  color: var(--texto-claro);
+  margin-top: 2rem;
+  text-align: center;
+  line-height: 1.6;
+}
+
+.rodape-creditos a {
+  color: var(--lil);
+  text-decoration: underline;
+  transition: color 0.25s ease, text-shadow 0.25s ease;
+  word-break: break-all;
+}
+
+.rodape-creditos a:hover {
+  color: #fff;
+  text-shadow: 0 0 10px rgba(191, 147, 192, 0.8);
+}
+/* ===== Tecnologias na tela de Créditos ===== */
+.tecnologias {
+  margin: 2.5rem auto 1rem;
+  max-width: 700px;
+  color: var(--texto-claro);
+  text-align: center;
+}
+
+.tecnologias h3 {
+  font-family: "Cinzel", serif;
+  font-size: 1rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--lil);
+  margin: 0 0 1.2rem;
+  font-weight: 600;
+}
+
+.tecnologias ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.tecnologias li {
+  background: rgba(118, 47, 120, 0.45);
+  border: 1px solid rgba(191, 147, 192, 0.4);
+  border-radius: 999px;
+  padding: 0.4rem 1.1rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  font-family: "Cinzel", serif;
+  color: #fff;
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.2s ease;
+  cursor: default;
+}
+
+.tecnologias li:hover {
+  background: rgba(118, 47, 120, 0.8);
+  border-color: rgba(191, 147, 192, 0.95);
+  box-shadow:
+    0 0 12px rgba(191, 147, 192, 0.6),
+    0 0 24px rgba(118, 47, 120, 0.4);
+  transform: translateY(-2px);
 }

@@ -15,9 +15,10 @@ app.locals.fmt = s => s ? `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)} -
 // O "login" é só o visitante escolhido no seletor, guardado em cookie.
 const cookies = req => Object.fromEntries((req.headers.cookie || '').split('; ').filter(Boolean).map(c => c.split('=')));
 
-// ---------- Início e métricas ----------
+// ---------- Início, métricas e créditos ----------
 app.get('/', (req, res) => res.render('index', { aba: '' }));
 app.get('/metricas', (req, res) => res.render('metricas', { aba: 'metricas', s: f.stats() }));
+app.get('/creditos', (req, res) => res.render('creditos', { aba: 'creditos' }));
 
 // ---------- Visitantes ----------
 app.get('/visitantes', (req, res) =>

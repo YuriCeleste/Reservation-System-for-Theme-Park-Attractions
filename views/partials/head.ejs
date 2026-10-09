@@ -12,6 +12,7 @@
   <a href="/atracoes" class="<%= aba === 'atracoes' ? 'on' : '' %>">Atrações</a>
   <a href="/visitantes" class="<%= aba === 'visitantes' ? 'on' : '' %>">Visitantes</a>
   <a href="/metricas" class="<%= aba === 'metricas' ? 'on' : '' %>">Métricas</a>
+  <a href="/creditos" class="<%= aba === 'creditos' ? 'on' : '' %>">Créditos</a>
 </header>
 <% if (aba === 'atracoes' || aba === 'visitantes') {
   const subs = aba === 'atracoes'
@@ -21,4 +22,4 @@
   <% subs.forEach(s => { %><a href="<%= s[0] %>" class="<%= sub === s[1] ? 'on' : '' %>"><%= s[2] %></a><% }) %>
 </nav>
 <% } %>
-<main class="<%= aba ? 'cinza' : '' %> <%= aba === 'atracoes' ? 'fundo-teto' : '' %> <%= aba === 'visitantes' ? 'fundo-miku' : '' %> <%= aba === 'metricas' ? 'fundo-tetot' : '' %>">
+<main class="<%= aba ? 'cinza' : '' %> <%= aba === 'atracoes' ? 'fundo-teto' : '' %> <%= aba === 'visitantes' ? 'fundo-miku' : '' %> <%= aba === 'metricas' ? 'fundo-tetot' : '' %> <%= aba === 'creditos' ? 'fundo-creditos' : '' %>">
