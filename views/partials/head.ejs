@@ -21,4 +21,4 @@
   <% subs.forEach(s => { %><a href="<%= s[0] %>" class="<%= sub === s[1] ? 'on' : '' %>"><%= s[2] %></a><% }) %>
 </nav>
 <% } %>
-<main class="<%= aba ? 'cinza' : '' %>">
+<main class="<%= aba ? 'cinza' : '' %> <%= aba === 'atracoes' ? 'fundo-teto' : '' %> <%= aba === 'visitantes' ? 'fundo-miku' : '' %> <%= aba === 'metricas' ? 'fundo-tetot' : '' %>">
