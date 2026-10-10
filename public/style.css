@@ -648,3 +648,28 @@ main.cinza.fundo-creditos {
     0 0 24px rgba(118, 47, 120, 0.4);
   transform: translateY(-2px);
 }
+
+/* ===== Correção de contraste: texto escuro sobre fundo claro ===== */
+.atr { color: #1b1b1b; }
+.atr h3 { color: var(--roxo-escuro); }
+
+/* branco sobre lilás tinha pouco contraste */
+.horas strong { background: var(--roxo); }
+th { color: var(--roxo-escuro); }
+
+/* o diálogo do cartão é branco por padrão, mas os rótulos herdam texto claro */
+dialog {
+  background: linear-gradient(180deg, #5a1e5c, #1a0f1f);
+  color: var(--texto-claro);
+  border: 1px solid rgba(191, 147, 192, 0.4);
+}
+
+/* ===== Submenu: fundo escuro para o texto claro ficar legível ===== */
+.sub {
+  background: linear-gradient(180deg, #0a080e 0%, #2a1630 100%);
+  border-bottom: 1px solid rgba(191, 147, 192, 0.35);
+}
+.sub a { color: #e9d9ea; }
+.sub a + a { border-left: 1px solid rgba(191, 147, 192, 0.35); }
+.sub a:hover { background: rgba(191, 147, 192, 0.2); color: #fff; }
+.sub a.on { color: #fff; background: rgba(118, 47, 120, 0.45); text-decoration: underline; }
