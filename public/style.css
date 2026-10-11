@@ -1010,3 +1010,30 @@ main.cinza.fundo-teto h2 {
 .busca-visitante input {
   flex: 1;
 }
+/* ===== Busca de visitante ===== */
+.busca-input {
+  width: 100%;
+  padding: 0.6rem 1rem;
+  margin: 0.5rem 0 1rem;
+  border: 1px solid rgba(191, 147, 192, 0.5);
+  border-radius: 6px;
+  background: rgba(20, 20, 24, 0.55);
+  color: var(--texto-claro);
+  font: inherit;
+  font-size: 0.95rem;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.busca-input::placeholder { color: rgba(242, 233, 242, 0.5); }
+
+.busca-input:focus {
+  outline: none;
+  border-color: var(--lil);
+  box-shadow: 0 0 0 2px rgba(191, 147, 192, 0.3), 0 0 10px rgba(191, 147, 192, 0.35);
+}
+
+/* Feedback visual quando a busca não encontra nada */
+.busca-input.sem-resultado {
+  border-color: #e85a5a;
+  box-shadow: 0 0 0 2px rgba(232, 90, 90, 0.3);
+}

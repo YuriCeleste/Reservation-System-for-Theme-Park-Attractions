@@ -95,7 +95,7 @@ app.get('/visitantes/painel', (req, res) => {
 
   res.render('visitantes/painel', {
     aba: 'visitantes', sub: 'painel', ok: req.query.ok, erro: req.query.erro, v,
-    visitantes: parque.listarVisitantes().map(x => ({ id: x.id, nome: x.nome })),
+    visitantes: parque.listarVisitantes().map(x => ({ id: x.id, nome: x.nome, cpf: x.cpf })),
     ...painel
   });
 });

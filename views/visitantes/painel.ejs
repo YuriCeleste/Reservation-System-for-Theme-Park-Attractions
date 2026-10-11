@@ -1,11 +1,17 @@
 <%- include('../partials/head') %>
 <div class="card larga">
+  <h3>Buscar visitante</h3>
+  <input type="text" id="busca-visitante" placeholder="Digite o nome ou CPF..."
+         class="busca-input" autocomplete="off">
+
   <form method="get">
     <label>Visitante:
-      <select name="visitante" onchange="this.form.submit()">
+      <select name="visitante" id="select-visitante" onchange="this.form.submit()">
         <option value="">Selecione o visitante</option>
         <% visitantes.forEach(x => { %>
-          <option value="<%= x.id %>" <%= v && v.id === x.id ? 'selected' : '' %>><%= x.nome %></option>
+          <option value="<%= x.id %>"
+                  data-cpf="<%= x.cpf %>"
+                  <%= v && v.id === x.id ? 'selected' : '' %>><%= x.nome %></option>
         <% }) %>
       </select>
     </label>
@@ -100,4 +106,36 @@
 
   <% } %>
 </div>
+
+<script>
+  // Filtra o select de visitantes por nome ou CPF (em tempo real)
+  const busca = document.getElementById('busca-visitante');
+  const select = document.getElementById('select-visitante');
+
+  if (busca && select) {
+    const opcoes = [...select.querySelectorAll('option')].slice(1); // ignora "Selecione"
+
+    busca.addEventListener('input', () => {
+      const termo = busca.value.trim().toLowerCase();
+      let visiveis = 0;
+
+      opcoes.forEach(opt => {
+        const nome = opt.textContent.toLowerCase();
+        const cpf = (opt.dataset.cpf || '').toLowerCase();
+        const bate = !termo || nome.includes(termo) || cpf.includes(termo);
+        opt.style.display = bate ? '' : 'none';
+        if (bate) visiveis++;
+      });
+
+      // Se o visitante selecionado não bate com a busca, volta para "Selecione"
+      const selecionado = select.selectedOptions[0];
+      if (selecionado && selecionado.style.display === 'none') {
+        select.value = '';
+      }
+
+      // Feedback visual
+      busca.classList.toggle('sem-resultado', visiveis === 0);
+    });
+  }
+</script>
 <%- include('../partials/foot') %>
