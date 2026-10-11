@@ -1,94 +1,62 @@
 const Ingresso = require('./Ingresso');
-const db = require('../db');
 
 class Visitante {
-  _nome;
-  _cpf;
-  _email;
-  _nascimento;
-  _ingresso;
-  _cartaoBandeira;
-  _cartaoFinal;
+  #id;
+  #nome;
+  #cpf;
+  #email;
+  #nascimento;
+  #ingresso;
+  #cartaoBandeira = null;
+  #cartaoFinal = null;
 
-  id = null;
-
-  constructor({ nome, cpf, email, nascimento, ingresso, cartao }) {
+  /** O id é gerado pelo Parque. `hoje` ('AAAA-MM-DD') vem do Relogio; sem ele, usa o dia local. */
+  constructor({ id, nome, cpf, email, nascimento, ingresso, cartao, hoje = Visitante.#hojeLocal() }) {
+    if (id === undefined || id === null) throw new Error('Id é obrigatório (gerado pelo Parque).');
     if (!nome || !nome.trim()) throw new Error('Nome é obrigatório.');
     if (!email || !email.includes('@')) throw new Error('E-mail inválido.');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(nascimento)) throw new Error('Data de nascimento inválida.');
-    if (nascimento > new Date().toISOString().slice(0, 10)) throw new Error('A data de nascimento não pode ser no futuro.');
+    if (nascimento > hoje) throw new Error('A data de nascimento não pode ser no futuro.');
 
     const cpfLimpo = (cpf || '').replace(/\D/g, '');
     if (!/^\d{11}$/.test(cpfLimpo)) throw new Error('O CPF deve ter exatamente 11 dígitos.');
 
-    const ing = Ingresso.criar(ingresso || 'normal');
-
-    let bandeira = null, final = null;
-    if (ing.exigeCartao()) {
-      const num = (cartao?.numero || '').replace(/\D/g, '');
-      if (!/^\d{13,19}$/.test(num)) throw new Error('O ingresso VIP exige um cartão de crédito.');
-      bandeira = ({ 4: 'Visa', 5: 'Mastercard' }[num[0]]) || 'Outro';
-      final = num.slice(-4);
+    const tipoIngresso = Ingresso.criar(ingresso || 'normal');
+    if (tipoIngresso.exigeCartao()) {
+      const numero = (cartao?.numero || '').replace(/\D/g, '');
+      if (!/^\d{13,19}$/.test(numero)) throw new Error('O ingresso VIP exige um cartão de crédito.');
+      this.#cartaoBandeira = ({ 4: 'Visa', 5: 'Mastercard' }[numero[0]]) || 'Outro';
+      this.#cartaoFinal = numero.slice(-4); // só os 4 últimos dígitos ficam guardados
     }
 
-    this._nome = nome.trim();
-    this._cpf = cpfLimpo;
-    this._email = email.trim();
-    this._nascimento = nascimento;
-    this._ingresso = ing;
-    this._cartaoBandeira = bandeira;
-    this._cartaoFinal = final;
+    this.#id = id;
+    this.#nome = nome.trim();
+    this.#cpf = cpfLimpo;
+    this.#email = email.trim();
+    this.#nascimento = nascimento;
+    this.#ingresso = tipoIngresso;
   }
 
-  idade() {
-    const [y, m, d] = this._nascimento.split('-').map(Number);
-    const t = new Date();
-    return t.getFullYear() - y - (t < new Date(t.getFullYear(), m - 1, d) ? 1 : 0);
+  /** Idade na data informada ('AAAA-MM-DD'); sem argumento, usa o dia local. */
+  idade(hoje = Visitante.#hojeLocal()) {
+    const [ano, mes, dia] = this.#nascimento.split('-').map(Number);
+    const [anoHoje, mesHoje, diaHoje] = hoje.split('-').map(Number);
+    const fezAniversario = mesHoje > mes || (mesHoje === mes && diaHoje >= dia);
+    return anoHoje - ano - (fezAniversario ? 0 : 1);
   }
 
-  salvar() {
-    const r = db.prepare(`
-      INSERT INTO visitantes (nome, cpf, email, nascimento, ingresso, cartao_bandeira, cartao_final)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      this._nome, this._cpf, this._email, this._nascimento,
-      this._ingresso.tipo, this._cartaoBandeira, this._cartaoFinal
-    );
-    this.id = r.lastInsertRowid;
-    return this.id;
+  static #hojeLocal() {
+    return new Date().toLocaleDateString('sv'); // AAAA-MM-DD, no fuso local
   }
 
-  static buscar(id) {
-    const row = db.prepare('SELECT * FROM visitantes WHERE id = ?').get(id);
-    if (!row) return null;
-    return Visitante._deRow(row);
-  }
-
-  static listar() {
-    return db.prepare('SELECT * FROM visitantes ORDER BY nome').all()
-      .map(row => Visitante._deRow(row));
-  }
-
-  static _deRow(row) {
-    const v = Object.create(Visitante.prototype);
-    v.id = row.id;
-    v._nome = row.nome;
-    v._cpf = row.cpf;
-    v._email = row.email;
-    v._nascimento = row.nascimento;
-    v._ingresso = Ingresso.criar(row.ingresso);
-    v._cartaoBandeira = row.cartao_bandeira;
-    v._cartaoFinal = row.cartao_final;
-    return v;
-  }
-
-  get nome()          { return this._nome; }
-  get cpf()           { return this._cpf; }
-  get email()         { return this._email; }
-  get nascimento()    { return this._nascimento; }
-  get ingresso()      { return this._ingresso; }
-  get cartaoBandeira(){ return this._cartaoBandeira; }
-  get cartaoFinal()   { return this._cartaoFinal; }
+  get id()             { return this.#id; }
+  get nome()           { return this.#nome; }
+  get cpf()            { return this.#cpf; }
+  get email()          { return this.#email; }
+  get nascimento()     { return this.#nascimento; }
+  get ingresso()       { return this.#ingresso; }
+  get cartaoBandeira() { return this.#cartaoBandeira; }
+  get cartaoFinal()    { return this.#cartaoFinal; }
 }
 
 module.exports = Visitante;

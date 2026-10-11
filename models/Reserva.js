@@ -1,92 +1,52 @@
-const db = require('../db');
 const Visitante = require('./Visitante');
 const Atracao = require('./Atracao');
 
+const HORARIO = /^([01]\d|2[0-3]):[0-5]\d$/;
+const DATA_HORA = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+
+/** Um lugar de um visitante na fila de uma sessão (e, depois, no histórico). */
 class Reserva {
+  #id;
   #visitante;
   #atracao;
   #horario;
+  #prioritaria;
   #entrouEm;
-  #embarcouEm;
-  #status;
-  #vip;
+  #embarcouEm = null;
+  #status = 'aguardando';
 
-  id = null;
-
-  constructor({ visitante, atracao, horario, entrouEm, embarcouEm, status, vip }) {
+  /** id e entrouEm vêm do Parque (contador e Relogio); prioritaria é o que a FilaVirtual lê. */
+  constructor({ id, visitante, atracao, horario, prioritaria, entrouEm }) {
+    if (id === undefined || id === null) throw new Error('Id é obrigatório (gerado pelo Parque).');
     if (!(visitante instanceof Visitante)) throw new Error('Reserva precisa de um Visitante.');
     if (!(atracao instanceof Atracao)) throw new Error('Reserva precisa de uma Atracao.');
-    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(horario)) throw new Error('Horário no formato HH:MM.');
-    if (status && !['aguardando', 'concluida'].includes(status)) {
-      throw new Error('Status deve ser "aguardando" ou "concluida".');
-    }
+    if (!HORARIO.test(horario)) throw new Error('Horário no formato HH:MM.');
+    if (!DATA_HORA.test(entrouEm)) throw new Error('Data/hora de entrada inválida.');
 
+    this.#id = id;
     this.#visitante = visitante;
     this.#atracao = atracao;
     this.#horario = horario;
-    this.#entrouEm = entrouEm || new Date().toLocaleString('sv');
-    this.#embarcouEm = embarcouEm || null;
-    this.#status = status || 'aguardando';
-    this.#vip = !!vip;
+    this.#prioritaria = !!prioritaria;
+    this.#entrouEm = entrouEm;
   }
 
-  embarcar() {
+  /** Registra o embarque na data/hora informada (vem do Relogio). */
+  concluir(dataHora) {
+    if (this.#status === 'concluida') throw new Error('Esta reserva já foi concluída.');
+    if (!DATA_HORA.test(dataHora)) throw new Error('Data/hora de embarque inválida.');
     this.#status = 'concluida';
-    this.#embarcouEm = new Date().toLocaleString('sv');
+    this.#embarcouEm = dataHora;
   }
 
-  salvar() {
-    const r = db.prepare(`
-      INSERT INTO reservas (visitante_id, atracao_id, horario, vip, entrou_em, embarcou_em, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      this.#visitante.id, this.#atracao.id, this.#horario,
-      this.#vip ? 1 : 0, this.#entrouEm, this.#embarcouEm, this.#status
-    );
-    this.id = r.lastInsertRowid;
-    return this.id;
-  }
-
-  static buscar(id) {
-    const row = db.prepare('SELECT * FROM reservas WHERE id = ?').get(id);
-    if (!row) return null;
-    return Reserva.#deRow(row);
-  }
-
-  static porAtracaoEHorario(atracaoId, horario) {
-    return db.prepare(`
-      SELECT * FROM reservas
-      WHERE atracao_id = ? AND horario = ? AND status = 'aguardando'
-      ORDER BY id
-    `).all(atracaoId, horario).map(row => Reserva.#deRow(row));
-  }
-
-  static porVisitante(visitanteId) {
-    return db.prepare('SELECT * FROM reservas WHERE visitante_id = ? ORDER BY id DESC')
-      .all(visitanteId).map(row => Reserva.#deRow(row));
-  }
-
-  static #deRow(row) {
-    const r = new Reserva({
-      visitante: Visitante.buscar(row.visitante_id),
-      atracao: Atracao.buscar(row.atracao_id),
-      horario: row.horario,
-      entrouEm: row.entrou_em,
-      embarcouEm: row.embarcou_em,
-      status: row.status,
-      vip: row.vip === 1
-    });
-    r.id = row.id;
-    return r;
-  }
-
-  get visitante()  { return this.#visitante; }
-  get atracao()    { return this.#atracao; }
-  get horario()    { return this.#horario; }
-  get entrouEm()   { return this.#entrouEm; }
-  get embarcouEm() { return this.#embarcouEm; }
-  get status()     { return this.#status; }
-  get vip()        { return this.#vip; }
+  get id()          { return this.#id; }
+  get visitante()   { return this.#visitante; }
+  get atracao()     { return this.#atracao; }
+  get horario()     { return this.#horario; }
+  get prioritaria() { return this.#prioritaria; }
+  get entrouEm()    { return this.#entrouEm; }
+  get embarcouEm()  { return this.#embarcouEm; }
+  get status()      { return this.#status; }
 }
 
 module.exports = Reserva;
