@@ -1,4 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Cinzel+Decorative:wght@400;700;900&family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nosifer&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Hedvig+Letters+Serif:opsz@12..24&display=swap');
 
 :root {
   --roxo: #762f78;
@@ -108,7 +110,9 @@ main.cinza {
 }
 
 .hero h1 {
-  font-family: "Cinzel Decorative", serif;
+  font-family: "Nosifer", sans-serif;
+  font-weight: 400;
+  font-style: normal;
   font-size: clamp(2.8rem, 8vw, 5.5rem);
   margin: 0;
   font-weight: 700;
@@ -203,14 +207,17 @@ main.cinza {
 }
 
 .card h2 {
-  font-family: "Cinzel", serif;
+  font-family: "Hedvig Letters Serif", serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
   text-align: center;
   font-size: 1.3rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   margin-top: 0;
-  color: var(--texto-claro);
+  color: rgb(44, 41, 41);
 }
 
 /* ===== Formulários ===== */
@@ -303,8 +310,10 @@ td form { margin: 0; }
 .atr { background: #f8f8f8; border-radius: 6px; padding: 1rem; margin: 1rem 0; }
 .atr h3 {
   margin: 0 0 .3rem;
-  font-family: "Cinzel", serif;
-  font-weight: 600;
+  font-family: "Hedvig Letters Serif", serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
   font-size: 1.3rem;
   letter-spacing: 0.05em;
 }

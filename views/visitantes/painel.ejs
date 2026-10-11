@@ -41,7 +41,7 @@
               <strong><%= h.h.replace(':', 'h') %></strong>
               <small><%= h.n %> pessoas já estão na fila</small>
               <button class="pill" <%= (a.menor || h.ja || h.passou) ? 'disabled' : '' %>>
-                <%= a.menor ? 'idade mínima não atingida' : h.ja ? 'você já está na fila' : h.passou ? 'horário encerrado' : 'entrar na fila' %>
+                <%= a.menor ? 'idade mínima não atingida' : h.ja ? 'visitante já está na fila' : h.passou ? 'horário encerrado' : 'entrar na fila' %>
               </button>
             </form>
           <% }) %>
