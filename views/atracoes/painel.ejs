@@ -1,26 +1,46 @@
 <%- include('../partials/head') %>
+<h2>Painel de Controle do Parque</h2>
+<% if (msg) { %><p class="ok"><%= msg %></p><% } %>
+
 <div class="card larga">
-  <h3>Pessoas na fila por atração</h3>
-  <% if (msg) { %><p class="ok"><%= msg %></p><% } %>
-  <table>
-    <tr><th>Atração/Evento</th><th>Pessoas na fila</th><th>Próximos a embarcar</th><th>Chamada para sessão</th></tr>
-    <% linhas.forEach(l => { %>
-      <tr>
-        <td><%= l.nome %><br><small>capacidade: <%= l.capacidade %></small></td>
-        <td><%= l.total %></td>
-        <td>
-          <% if (!l.sessao) { %>—<% } else { %>
-            <small>Sessão das <%= l.sessao.replace(':', 'h') %></small><br>
-            <% l.proximos.forEach((p, i) => { %><%= i + 1 %>º <%= p.nome %><br><% }) %>
-          <% } %>
-        </td>
-        <td>
-          <form method="post" action="/atracoes/<%= l.id %>/embarcar">
-            <button class="pill" <%= l.sessao ? '' : 'disabled' %>>EMBARCAR</button>
-          </form>
-        </td>
-      </tr>
-    <% }) %>
-  </table>
+  <% linhas.forEach(a => { %>
+    <article class="atr">
+      <h3><%= a.nome %></h3>
+      <p>Capacidade por sessão: <%= a.capacidade %></p>
+      <p>Idade mínima: <%= a.idade_minima %> anos</p>
+      <p>Possui fila VIP: <%= a.vip ? 'sim' : 'não' %></p>
+      <p>Horários do dia:</p>
+
+      <div class="horas">
+        <% a.sessoes.forEach(s => { %>
+          <div class="sessao-box">
+            <strong><%= s.horario.replace(':', 'h') %></strong>
+            <small><%= s.tamanho %> pessoa(s) na fila</small>
+
+            <% if (s.estrutura.tamanho > 0) { %>
+              <div class="proximos">
+                <span class="rotulo-mini">próximos:</span>
+                <% s.estrutura.nos.slice(0, 5).forEach((no, i) => { %>
+                  <span class="nome-fila">
+                    <%= i + 1 %>º <%= no.nome %><% if (no.vip) { %> <span class="estrela">★</span><% } %>
+                  </span>
+                <% }) %>
+                <% if (s.estrutura.tamanho > 5) { %>
+                  <span class="mais">+<%= s.estrutura.tamanho - 5 %></span>
+                <% } %>
+              </div>
+            <% } else { %>
+              <p class="fila-vazia-mini">Fila vazia</p>
+            <% } %>
+
+            <form method="post" action="/atracoes/<%= a.id %>/embarcar">
+              <button class="pill" <%= s.tamanho === 0 ? 'disabled' : '' %>>EMBARCAR</button>
+            </form>
+          </div>
+        <% }) %>
+      </div>
+    </article>
+  <% }) %>
 </div>
+
 <%- include('../partials/foot') %>

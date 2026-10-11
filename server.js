@@ -1,25 +1,3 @@
-/**
- * ============================================================
- *  SERVER — Camada HTTP
- * ============================================================
- *
- * Este arquivo SÓ faz:
- *   1. Ler a requisição (req.body, req.query, cookies)
- *   2. Chamar o Parque
- *   3. Passar o resultado para a view (res.render)
- *   4. Devolver a resposta (redirect, render)
- *
- * Toda regra de negócio vive nas classes (Parque, Visitante,
- * Atracao, Reserva, Sessao, FilaVirtual).
- *
- * ------------------------------------------------------------
- * CONTRATO DAS VIEWS
- * ------------------------------------------------------------
- *
- * Cada `res.render` abaixo documenta o formato dos dados que a
- * view recebe. Listas encadeadas são convertidas em array AQUI,
- * na borda, para a view só percorrer com forEach/map.
- */
 const path = require('path');
 const express = require('express');
 const parque = require('./models/Parque');
@@ -38,23 +16,14 @@ app.use(express.static(path.join(__dirname, 'public')));
 // 12/10/2026 - 13h28
 app.locals.fmt = s => s ? `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)} - ${s.slice(11, 16).replace(':', 'h')}` : '—';
 
-// O "login" é só o visitante escolhido no seletor, guardado em cookie.
 const cookies = req => Object.fromEntries((req.headers.cookie || '').split('; ').filter(Boolean).map(c => c.split('=')));
 
 // ---------- Início, métricas e créditos ----------
-
-// View 'index': { aba: '' }
 app.get('/', (req, res) => res.render('index', { aba: '' }));
-
-// View 'metricas': { aba: 'metricas', s: { total, comuns, vip, topA, topV } }
 app.get('/metricas', (req, res) => res.render('metricas', { aba: 'metricas', s: parque.stats() }));
-
-// View 'creditos': { aba: 'creditos' }
 app.get('/creditos', (req, res) => res.render('creditos', { aba: 'creditos' }));
 
 // ---------- Visitantes ----------
-
-// View 'visitantes/cadastro': { aba, sub, erro, d }
 app.get('/visitantes', (req, res) =>
   res.render('visitantes/cadastro', { aba: 'visitantes', sub: 'cadastro', erro: null, d: {} }));
 
@@ -62,12 +31,8 @@ app.post('/visitantes', (req, res) => {
   const d = req.body;
   try {
     const v = parque.cadastrarVisitante({
-      nome: d.nome,
-      cpf: d.cpf,
-      email: d.email,
-      nascimento: d.nascimento,
-      ingresso: d.ingresso || 'normal',
-      cartaoNumero: d.cartao_numero
+      nome: d.nome, cpf: d.cpf, email: d.email, nascimento: d.nascimento,
+      ingresso: d.ingresso || 'normal', cartaoNumero: d.cartao_numero
     });
     res.cookie('visitante', v.id);
     return res.redirect('/visitantes/painel?ok=1');
@@ -76,19 +41,6 @@ app.post('/visitantes', (req, res) => {
   }
 });
 
-/**
- * View 'visitantes/painel': {
- *   aba, sub, ok, erro,
- *   v:          Visitante | null
- *   visitantes: [{ id, nome }]
- *   atracoes:   [{
- *     id, nome, tipo, capacidade, idade_minima, vip, menor,
- *     horas: [{ h, n, ja, passou }]
- *   }]
- *   minhas:     [{ atracao, horario, posicao }]
- *   historico:  [{ id, atracao, horario, status, entrou_em, embarcou_em }]
- * }
- */
 app.get('/visitantes/painel', (req, res) => {
   if (req.query.visitante !== undefined) res.cookie('visitante', req.query.visitante);
   const id = req.query.visitante ?? cookies(req).visitante;
@@ -107,33 +59,22 @@ app.get('/visitantes/painel', (req, res) => {
         });
       }
       return {
-        id: a.id,
-        nome: a.nome,
-        tipo: a.tipo,
-        capacidade: a.capacidade,
-        idade_minima: a.idadeMinima,
-        vip: a.filaVip ? 1 : 0,
-        menor: v.idade(parque.relogio.hoje()) < a.idadeMinima,
-        horas
+        id: a.id, nome: a.nome, tipo: a.tipo, capacidade: a.capacidade,
+        idade_minima: a.idadeMinima, vip: a.filaVip ? 1 : 0,
+        menor: v.idade(parque.relogio.hoje()) < a.idadeMinima, horas
       };
     });
 
     const historico = parque.historico.porVisitante(v.id).map(r => ({
-      id: r.id,
-      atracao: r.atracao.nome,
-      horario: r.horario,
-      status: r.status,
-      entrou_em: r.entrouEm,
-      embarcou_em: r.embarcouEm
+      id: r.id, atracao: r.atracao.nome, horario: r.horario,
+      status: r.status, entrou_em: r.entrouEm, embarcou_em: r.embarcouEm
     }));
 
     const minhas = [];
     for (const a of parque.listarAtracoes()) {
       for (const s of a.sessoes) {
         const pos = s.fila.posicaoDe(v);
-        if (pos !== null) {
-          minhas.push({ atracao: a.nome, horario: s.horario, posicao: pos });
-        }
+        if (pos !== null) minhas.push({ atracao: a.nome, horario: s.horario, posicao: pos });
       }
     }
 
@@ -153,10 +94,8 @@ app.post('/visitantes/fila', (req, res) => {
 });
 
 // ---------- Atrações ----------
-
 const TIPOS = ['montanha-russa', 'trem fantasma', 'casa assombrada', 'labirinto', 'simulador', 'teatro'];
 
-// View 'atracoes/cadastro': { aba, sub, erro, d, TIPOS }
 app.get('/atracoes', (req, res) =>
   res.render('atracoes/cadastro', { aba: 'atracoes', sub: 'cadastro', erro: null, d: {}, TIPOS }));
 
@@ -164,12 +103,8 @@ app.post('/atracoes', (req, res) => {
   const d = req.body;
   try {
     parque.cadastrarAtracao({
-      nome: d.nome,
-      tipo: d.tipo,
-      capacidade: d.capacidade,
-      idadeMinima: d.idade_minima || 0,
-      horarios: d.horarios,
-      filaVip: d.vip === 'sim'
+      nome: d.nome, tipo: d.tipo, capacidade: d.capacidade,
+      idadeMinima: d.idade_minima || 0, horarios: d.horarios, filaVip: d.vip === 'sim'
     });
     res.redirect('/atracoes/painel?msg=' + encodeURIComponent('Atração cadastrada.'));
   } catch (e) {
@@ -177,25 +112,13 @@ app.post('/atracoes', (req, res) => {
   }
 });
 
-/**
- * View 'atracoes/painel': {
- *   aba, sub, msg,
- *   linhas: [{
- *     id, nome, tipo, capacidade, idade_minima, vip,
- *     horarios: 'string,com,virgulas',
- *     sessao:   'HH:MM' | null,
- *     total:    number,
- *     proximos: [Reserva]
- *   }]
- * }
- */
 app.get('/atracoes/painel', (req, res) => {
   const linhas = parque.listarAtracoes().map(a => {
     const sessoes = [...a.sessoes].map(s => ({
       horario: s.horario,
-      tamanho: s.fila.tamanho
+      tamanho: s.fila.tamanho,
+      estrutura: parque.estruturaDaFila(a.id, s.horario)
     }));
-    const primeira = sessoes.find(s => s.tamanho > 0) || sessoes[0];
 
     return {
       id: a.id,
@@ -203,13 +126,8 @@ app.get('/atracoes/painel', (req, res) => {
       tipo: a.tipo,
       capacidade: a.capacidade,
       idade_minima: a.idadeMinima,
-      horarios: sessoes.map(s => s.horario).join(','),
       vip: a.filaVip ? 1 : 0,
-      sessao: primeira ? primeira.horario : null,
-      total: primeira ? primeira.tamanho : 0,
-      proximos: primeira
-        ? [...a.buscarSessao(primeira.horario).fila.proximos(a.capacidade)]
-        : []
+      sessoes
     };
   });
   res.render('atracoes/painel', { aba: 'atracoes', sub: 'painel', linhas, msg: req.query.msg });

@@ -682,3 +682,95 @@ dialog {
 .sub a + a { border-left: 1px solid rgba(191, 147, 192, 0.35); }
 .sub a:hover { background: rgba(191, 147, 192, 0.2); color: #fff; }
 .sub a.on { color: #fff; background: rgba(118, 47, 120, 0.45); text-decoration: underline; }
+
+/* ===== Título legível sobre fundo temático ===== */
+main.cinza.fundo-teto h2 {
+  font-family: "Cinzel Decorative", serif;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+  text-align: center;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  margin: 0 auto 1.5rem;
+  width: fit-content;
+}/* ===== Painel de Atrações: mesmo estilo do painel de visitantes ===== */
+.sessao-box {
+  flex: 1;
+  min-width: 9rem;
+  text-align: center;
+  padding: 0.8rem 0.6rem;
+  background: #f8f8f8;
+  border-radius: 8px;
+  border: 1px solid rgba(191, 147, 192, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.sessao-box strong {
+  display: block;
+  background: var(--roxo);
+  color: #fff;
+  font-weight: 400;
+  font-size: 1.3rem;
+  padding: 0.3rem;
+  border-radius: 6px;
+  font-family: "Hedvig Letters Serif", serif;
+}
+
+.sessao-box small {
+  display: block;
+  color: #333;
+  font-size: 0.75rem;
+}
+
+.sessao-box .proximos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.75rem;
+  color: #1b1b1b;
+  margin: 0.3rem 0;
+}
+
+.sessao-box .rotulo-mini {
+  font-family: "Cinzel", serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--roxo-escuro);
+  margin-bottom: 0.2rem;
+}
+
+.sessao-box .nome-fila {
+  display: block;
+}
+
+.sessao-box .estrela {
+  color: #d4af37;
+  font-size: 0.85rem;
+}
+
+.sessao-box .mais {
+  font-size: 0.7rem;
+  color: #666;
+  font-style: italic;
+  margin-top: 0.2rem;
+}
+
+.sessao-box .fila-vazia-mini {
+  font-size: 0.75rem;
+  color: #666;
+  font-style: italic;
+  margin: 0.4rem 0;
+}
+
+.sessao-box .pill {
+  margin-top: 0.4rem;
+}
+
+/* Sobrescreve o .horas para o painel de atrações ter cards maiores */
+.horas .sessao-box {
+  flex: 1;
+  min-width: 10rem;
+}
