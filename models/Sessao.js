@@ -10,6 +10,7 @@ class Sessao {
   constructor(horario) {
     if (!HORARIO.test(horario)) throw new Error('Horário no formato HH:MM.');
     this.#horario = horario;
+    this.#fila = new FilaVirtual();
   }
 
   get horario() { return this.#horario; }
