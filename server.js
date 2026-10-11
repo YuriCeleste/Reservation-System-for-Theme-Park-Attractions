@@ -2,7 +2,6 @@ const path = require('path');
 const express = require('express');
 const db = require('./db');
 const f = require('./filas');
-const Ingresso = require('./models/Ingresso');
 const Visitante = require('./models/Visitante');
 const Atracao = require('./models/Atracao');
 
@@ -53,7 +52,7 @@ app.get('/visitantes/painel', (req, res) => {
   const v = id ? Visitante.buscar(id) : null;
   res.render('visitantes/painel', {
     aba: 'visitantes', sub: 'painel', ok: req.query.ok, erro: req.query.erro, v,
-    visitantes: db.prepare('SELECT id, nome FROM visitantes ORDER BY nome').all(),
+    visitantes: Visitante.listar().map(x => ({ id: x.id, nome: x.nome })),
     atracoes: [], minhas: [], historico: [], ...(v ? f.painelVisitante(v) : {})
   });
 });
@@ -88,12 +87,20 @@ app.post('/atracoes', (req, res) => {
 });
 
 app.get('/atracoes/painel', (req, res) => {
-  const linhas = db.prepare('SELECT * FROM atracoes ORDER BY nome').all().map(a => {
+  const linhas = Atracao.listar().map(a => {
     const h = f.sessao(a.id);
+    const sessao = h ? a.sessao(h) : null;
     return {
-      ...a, sessao: h,
-      total: db.prepare("SELECT COUNT(*) n FROM reservas WHERE atracao_id = ? AND status = 'aguardando'").get(a.id).n,
-      proximos: h ? f.fila(a.id, h).slice(0, a.capacidade) : []
+      id: a.id,
+      nome: a.nome,
+      tipo: a.tipo,
+      capacidade: a.capacidade,
+      idade_minima: a.idadeMinima,
+      horarios: a.horarios().join(','),
+      vip: a.filaVip ? 1 : 0,
+      sessao: h,
+      total: sessao ? sessao.tamanho : 0,
+      proximos: sessao ? sessao.proximos(a.capacidade).paraArray() : []
     };
   });
   res.render('atracoes/painel', { aba: 'atracoes', sub: 'painel', linhas, msg: req.query.msg });
