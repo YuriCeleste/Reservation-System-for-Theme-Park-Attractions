@@ -1,17 +1,16 @@
 /**
  * ============================================================
- *  SEED — Dados de exemplo
+ *  DADOS DE EXEMPLO
  * ============================================================
  *
  * Popula o Parque com atrações, visitantes e reservas de exemplo.
- * Como o Parque é um singleton EM MEMÓRIA, o seed precisa rodar
- * no MESMO processo que o server.
+ *
+ * Como o Parque é um singleton EM MEMÓRIA, este arquivo precisa
+ * rodar no MESMO processo que o server.
  *
  * Uso:
- *   node seed.js              → executa o seed (sozinho, não afeta o server)
- *   npm run demo              → sobe o server + seed no mesmo processo
- *
- * O server.js chama este arquivo automaticamente quando em modo demo.
+ *   npm run demo    → sobe o server + dados-exemplo no mesmo processo
+ *   npm run seed    → executa só o arquivo (não afeta o server)
  * ============================================================
  */
 const parque = require('./models/Parque');

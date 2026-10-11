@@ -10,8 +10,7 @@
  *   4. Devolver a resposta (redirect, render)
  *
  * Toda regra de negócio vive nas classes (Parque, Visitante,
- * Atracao, Reserva, Sessao, FilaVirtual). Aqui não tem `if`
- * de validação nem cálculo.
+ * Atracao, Reserva, Sessao, FilaVirtual).
  *
  * ------------------------------------------------------------
  * CONTRATO DAS VIEWS
@@ -25,9 +24,9 @@ const path = require('path');
 const express = require('express');
 const parque = require('./models/Parque');
 
-// Roda o seed automaticamente quando em modo demo (npm run demo)
+// Roda os dados de exemplo automaticamente quando em modo demo (npm run demo)
 if (process.argv.includes('--sem-hora')) {
-  require('./seed');
+  require('./dados-exemplo');
 }
 
 const app = express();
@@ -97,7 +96,6 @@ app.get('/visitantes/painel', (req, res) => {
 
   let painel = { atracoes: [], minhas: [], historico: [] };
   if (v) {
-    // Lista de atrações com o estado da fila para esse visitante
     const atracoes = parque.listarAtracoes().map(a => {
       const horas = [];
       for (const s of a.sessoes) {
@@ -120,7 +118,6 @@ app.get('/visitantes/painel', (req, res) => {
       };
     });
 
-    // Histórico de reservas do visitante
     const historico = parque.historico.porVisitante(v.id).map(r => ({
       id: r.id,
       atracao: r.atracao.nome,
@@ -130,7 +127,6 @@ app.get('/visitantes/painel', (req, res) => {
       embarcou_em: r.embarcouEm
     }));
 
-    // Reservas aguardando (com a posição)
     const minhas = [];
     for (const a of parque.listarAtracoes()) {
       for (const s of a.sessoes) {
@@ -151,7 +147,6 @@ app.get('/visitantes/painel', (req, res) => {
   });
 });
 
-// Redireciona sempre, não renderiza nada.
 app.post('/visitantes/fila', (req, res) => {
   const erro = parque.entrarNaFila(+cookies(req).visitante, +req.body.atracao_id, req.body.horario);
   res.redirect('/visitantes/painel?' + (erro ? 'erro=' + encodeURIComponent(erro) : 'ok=fila'));
@@ -188,9 +183,9 @@ app.post('/atracoes', (req, res) => {
  *   linhas: [{
  *     id, nome, tipo, capacidade, idade_minima, vip,
  *     horarios: 'string,com,virgulas',
- *     sessao:   'HH:MM' | null,     ← próximo horário com fila (ou o primeiro)
+ *     sessao:   'HH:MM' | null,
  *     total:    number,
- *     proximos: [Reserva]           ← array (já convertido)
+ *     proximos: [Reserva]
  *   }]
  * }
  */
@@ -220,7 +215,6 @@ app.get('/atracoes/painel', (req, res) => {
   res.render('atracoes/painel', { aba: 'atracoes', sub: 'painel', linhas, msg: req.query.msg });
 });
 
-// Redireciona sempre, não renderiza nada.
 app.post('/atracoes/:id/embarcar', (req, res) => {
   const r = parque.embarcar(+req.params.id);
   const msg = r ? `Sessão das ${r.horario}: ${r.total} visitante(s) embarcaram.` : 'Ninguém na fila.';
