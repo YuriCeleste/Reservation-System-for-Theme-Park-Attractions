@@ -13,17 +13,52 @@
 
   <% if (ok === '1') { %><p class="ok">Cadastro concluído! Escolha uma atração abaixo.</p><% } %>
   <% if (ok === 'fila') { %><p class="ok">Você entrou na fila.</p><% } %>
+  <% if (ok === 'saiu') { %><p class="ok">Você saiu da fila.</p><% } %>
+  <% if (ok === 'trocou') { %><p class="ok">Horário trocado.</p><% } %>
   <% if (erro) { %><p class="erro"><%= erro %></p><% } %>
 
   <% if (!v) { %>
     <p>Selecione um visitante para ver as filas, as atrações e o histórico.</p>
   <% } else { %>
+
     <h3>Posições da fila atualmente:</h3>
-    <% if (!minhas.length) { %><p>Você não está em nenhuma fila.</p><% } else { %>
-    <table>
-      <tr><th>Atração/Evento</th><th>Horário</th><th>Posição da fila</th></tr>
-      <% minhas.forEach(m => { %><tr><td><%= m.atracao %></td><td><%= m.horario.replace(':', 'h') %></td><td><%= m.posicao %>ª posição</td></tr><% }) %>
-    </table>
+    <% if (!minhas.length) { %>
+      <p>Você não está em nenhuma fila.</p>
+    <% } else { %>
+      <table>
+        <tr>
+          <th>Atração/Evento</th>
+          <th>Horário</th>
+          <th>Posição da fila</th>
+          <th>Ações</th>
+        </tr>
+        <% minhas.forEach(m => { %>
+          <tr>
+            <td><%= m.atracao %></td>
+            <td><%= m.horario.replace(':', 'h') %></td>
+            <td><%= m.posicao %>ª posição</td>
+            <td>
+              <form method="post" action="/visitantes/sair-fila" style="display:inline">
+                <input type="hidden" name="atracao_id" value="<%= m.atracao_id %>">
+                <input type="hidden" name="horario" value="<%= m.horario %>">
+                <button class="pill">SAIR</button>
+              </form>
+              <% if (m.outrosHorarios.length) { %>
+                <form method="post" action="/visitantes/trocar-horario" style="display:inline">
+                  <input type="hidden" name="atracao_id" value="<%= m.atracao_id %>">
+                  <input type="hidden" name="horario_atual" value="<%= m.horario %>">
+                  <select name="novo_horario" style="width:auto;display:inline-block">
+                    <% m.outrosHorarios.forEach(h => { %>
+                      <option value="<%= h %>"><%= h.replace(':', 'h') %></option>
+                    <% }) %>
+                  </select>
+                  <button class="pill">TROCAR</button>
+                </form>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </table>
     <% } %>
 
     <h3>Atrações:</h3>
@@ -51,11 +86,18 @@
 
     <h3>Histórico de atrações reservadas:</h3>
     <% if (!historico.length) { %><p>Nenhuma reserva ainda.</p><% } else { %>
-    <table>
-      <tr><th>Atração/Evento</th><th>Entrou na fila</th><th>Embarcou</th></tr>
-      <% historico.forEach(h => { %><tr><td><%= h.atracao %></td><td><%= fmt(h.entrou_em) %></td><td><%= fmt(h.embarcou_em) %></td></tr><% }) %>
-    </table>
+      <table>
+        <tr><th>Atração/Evento</th><th>Entrou na fila</th><th>Embarcou</th></tr>
+        <% historico.forEach(h => { %>
+          <tr>
+            <td><%= h.atracao %></td>
+            <td><%= fmt(h.entrou_em) %></td>
+            <td><%= fmt(h.embarcou_em) %></td>
+          </tr>
+        <% }) %>
+      </table>
     <% } %>
+
   <% } %>
 </div>
 <%- include('../partials/foot') %>

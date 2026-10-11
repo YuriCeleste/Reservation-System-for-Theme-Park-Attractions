@@ -1,22 +1,58 @@
-/**
+  // ==========================================================
+  //  ESTATÍSTICAS
+  // ==========================================================
+  stats() {
+    const ListaDuplamenteEncadeada = require('./ListaDuplamenteEncadeada');
+    const hoje = this.#relogio.hoje();
+
+    const doDia = [];
+    for (const r of this.#historico) {
+      if (r.entrouEm.slice(0, 10) === hoje) doDia.push(r);
+    }
+
+    let total = 0, vip = 0;
+    const contAtracao = new Map();
+    const contVisitante = new Map();
+
+    for (const r of doDia) {
+      total++;
+      if (r.prioritaria) vip++;
+      contAtracao.set(r.atracao.id, (contAtracao.get(r.atracao.id) || 0) + 1);
+      contVisitante.set(r.visitante.id, (contVisitante.get(r.visitante.id) || 0) + 1);
+    }
+
+    const rankingAtracoes = new ListaDuplamenteEncadeada();
+    for (const [id, n] of contAtracao) {
+      rankingAtracoes.inserirNoFim({ id, n, nome: this.buscarAtracao(id)?.nome });
+    }
+    rankingAtracoes.ordenar((a, b) => b.n - a.n);
+
+    const rankingVisitantes = new ListaDuplamenteEncadeada();
+    for (const [id, n] of contVisitante) {
+      rankingVisitantes.inserirNoFim({ id, n, nome: this.buscarVisitante(id)?.nome });
+    }
+    rankingVisitantes.ordenar((a, b) => b.n - a.n);
+
+    const arrA = []; for (const r of rankingAtracoes) arrA.push(r);
+    const arrV = []; for (const r of rankingVisitantes) arrV.push(r);
+
+    return {
+      total, vip, comuns: total - vip,
+      rankingAtracoes: arrA,
+      rankingVisitantes: arrV,
+      topA: arrA[0] || null,
+      topV: arrV[0] || null
+    };
+  }
+}   ← fecha a classe
+
+module.exports = new Parque();/**
  * ============================================================
  *  PARQUE
  * ============================================================
  * A classe Parque é o "cérebro" do sistema.
  * Ela guarda as listas encadeadas, os contadores de IDs, o relógio
  * e todas as regras de negócio. O server.js só repassa dados.
- *
- * ------------------------------------------------------------
- * SOBRE A estruturaDaFila()
- * ------------------------------------------------------------
- * Devolve a fila "crua" para a view desenhar como lista encadeada:
- *   { nos, inicio, fim, ultimoVip, tamanho }
- *
- * - nos:       [{ nome, vip }, ...] na ordem da fila
- * - inicio:    nome do primeiro nó
- * - fim:       nome do último nó
- * - ultimoVip: nome do último VIP (ou null)
- * - tamanho:   quantidade de nós
  */
 class Parque {
   #visitantes = new (require('./ListaVisitantes'))();
@@ -198,15 +234,8 @@ class Parque {
   }
 
   // ==========================================================
-  //  ESTRUTURA DA FILA (para a view desenhar como lista encadeada)
+  //  ESTRUTURA DA FILA (para desenhar como lista encadeada)
   // ==========================================================
-  /**
-   * Devolve a fila "crua" para a view desenhar como lista encadeada.
-   *
-   * @param {number} atracaoId
-   * @param {string} horario
-   * @returns {{nos, inicio, fim, ultimoVip, tamanho}}
-   */
   estruturaDaFila(atracaoId, horario) {
     const a = this.buscarAtracao(atracaoId);
     if (!a) return { nos: [], inicio: null, fim: null, ultimoVip: null, tamanho: 0 };
@@ -216,12 +245,7 @@ class Parque {
     const fila = sessao.fila;
     const nos = [];
     for (const r of fila) {
-      nos.push({
-        nome: r.visitante.nome,
-        vip: r.prioritaria,
-        // id para o front, se quiser usar em animação
-        id: r.id
-      });
+      nos.push({ nome: r.visitante.nome, vip: r.prioritaria, id: r.id });
     }
 
     return {
@@ -256,30 +280,30 @@ class Parque {
       contVisitante.set(r.visitante.id, (contVisitante.get(r.visitante.id) || 0) + 1);
     }
 
-    const rankingAtracao = new ListaDuplamenteEncadeada();
+    const rankingAtracoes = new ListaDuplamenteEncadeada();
     for (const [id, n] of contAtracao) {
-      rankingAtracao.inserirNoFim({ id, n, nome: this.buscarAtracao(id)?.nome });
+      rankingAtracoes.inserirNoFim({ id, n, nome: this.buscarAtracao(id)?.nome });
     }
+    rankingAtracoes.ordenar((a, b) => b.n - a.n);
 
-    const rankingVisitante = new ListaDuplamenteEncadeada();
+    const rankingVisitantes = new ListaDuplamenteEncadeada();
     for (const [id, n] of contVisitante) {
-      rankingVisitante.inserirNoFim({ id, n, nome: this.buscarVisitante(id)?.nome });
+      rankingVisitantes.inserirNoFim({ id, n, nome: this.buscarVisitante(id)?.nome });
     }
+    rankingVisitantes.ordenar((a, b) => b.n - a.n);
 
-    rankingAtracao.ordenar((a, b) => b.n - a.n);
-    rankingVisitante.ordenar((a, b) => b.n - a.n);
-
-    const topA = rankingAtracao.inicio ? rankingAtracao.inicio.dado : null;
-    const topV = rankingVisitante.inicio ? rankingVisitante.inicio.dado : null;
+    const arrA = []; for (const r of rankingAtracoes) arrA.push(r);
+    const arrV = []; for (const r of rankingVisitantes) arrV.push(r);
 
     return {
-      total,
-      vip,
-      comuns: total - vip,
-      topA: topA ? { nome: topA.nome, n: topA.n } : null,
-      topV: topV ? { nome: topV.nome, n: topV.n } : null
+      total, vip, comuns: total - vip,
+      rankingAtracoes: arrA,
+      rankingVisitantes: arrV,
+      topA: arrA[0] || null,
+      topV: arrV[0] || null
     };
   }
 }
 
+// Singleton
 module.exports = new Parque();

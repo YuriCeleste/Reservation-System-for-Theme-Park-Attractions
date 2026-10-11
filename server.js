@@ -74,7 +74,19 @@ app.get('/visitantes/painel', (req, res) => {
     for (const a of parque.listarAtracoes()) {
       for (const s of a.sessoes) {
         const pos = s.fila.posicaoDe(v);
-        if (pos !== null) minhas.push({ atracao: a.nome, horario: s.horario, posicao: pos });
+        if (pos !== null) {
+          const outrosHorarios = [...a.sessoes]
+            .filter(s2 => s2.horario !== s.horario && parque.relogio.horarioAberto(s2.horario))
+            .map(s2 => s2.horario);
+
+          minhas.push({
+            atracao: a.nome,
+            atracao_id: a.id,
+            horario: s.horario,
+            posicao: pos,
+            outrosHorarios
+          });
+        }
       }
     }
 
@@ -91,6 +103,20 @@ app.get('/visitantes/painel', (req, res) => {
 app.post('/visitantes/fila', (req, res) => {
   const erro = parque.entrarNaFila(+cookies(req).visitante, +req.body.atracao_id, req.body.horario);
   res.redirect('/visitantes/painel?' + (erro ? 'erro=' + encodeURIComponent(erro) : 'ok=fila'));
+});
+
+app.post('/visitantes/sair-fila', (req, res) => {
+  const v = cookies(req).visitante;
+  parque.sairDaFila(+v, +req.body.atracao_id, req.body.horario);
+  res.redirect('/visitantes/painel?ok=saiu');
+});
+
+app.post('/visitantes/trocar-horario', (req, res) => {
+  const v = cookies(req).visitante;
+  const erro = parque.trocarHorario(
+    +v, +req.body.atracao_id, req.body.horario_atual, req.body.novo_horario
+  );
+  res.redirect('/visitantes/painel?' + (erro ? 'erro=' + encodeURIComponent(erro) : 'ok=trocou'));
 });
 
 // ---------- Atrações ----------

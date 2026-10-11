@@ -963,3 +963,50 @@ main.cinza.fundo-teto h2 {
 .card.larga .atr > .sessao-bloco > form {
   margin-top: 0.6rem;
 }
+/* ===== Ranking nas métricas ===== */
+.ranking {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+  text-align: left;
+}
+
+.ranking li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid rgba(191, 147, 192, 0.2);
+  color: var(--texto-claro);
+  font-size: 0.9rem;
+}
+
+.ranking li:last-child { border-bottom: 0; }
+
+.ranking .pos {
+  font-family: "Cinzel", serif;
+  font-weight: 700;
+  color: #d4af37;
+  min-width: 2rem;
+}
+
+.ranking .nome {
+  flex: 1;
+}
+
+.ranking .num {
+  font-size: 0.8rem;
+  color: var(--lil);
+}
+
+/* ===== Busca de visitantes ===== */
+.busca-visitante {
+  margin: 1rem 0;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.busca-visitante input {
+  flex: 1;
+}

@@ -11,17 +11,41 @@
       <span style="background:#2fe8d9"></span><%= s.vip %> reservas VIP
     </p>
   </section>
+
   <section class="card">
-    <h3>Atração mais disputada</h3>
-    <strong><%= s.topA ? s.topA.nome : 'Sem reservas hoje' %></strong>
+    <h3>Atrações mais disputadas</h3>
+    <% if (!s.rankingAtracoes || !s.rankingAtracoes.length) { %>
+      <strong>Sem reservas hoje</strong>
+    <% } else { %>
+      <ol class="ranking">
+        <% s.rankingAtracoes.slice(0, 3).forEach((r, i) => { %>
+          <li>
+            <span class="pos"><%= i + 1 %>º</span>
+            <span class="nome"><%= r.nome %></span>
+            <span class="num"><%= r.n %> reservas</span>
+          </li>
+        <% }) %>
+      </ol>
+    <% } %>
     <div class="trofeu"><img class="trofeu-img" src="Parque_Terror_Trofeu_Sombrio-E.png" alt="Trofeu Sombrio"></div>
-    <% if (s.topA) { %><span class="destaque"><%= s.topA.n %> reservas</span><% } %>
   </section>
+
   <section class="card">
-    <h3>Visitante do dia</h3>
-    <strong><%= s.topV ? s.topV.nome : 'Sem reservas hoje' %></strong>
+    <h3>Visitantes do dia</h3>
+    <% if (!s.rankingVisitantes || !s.rankingVisitantes.length) { %>
+      <strong>Sem reservas hoje</strong>
+    <% } else { %>
+      <ol class="ranking">
+        <% s.rankingVisitantes.slice(0, 3).forEach((r, i) => { %>
+          <li>
+            <span class="pos"><%= i + 1 %>º</span>
+            <span class="nome"><%= r.nome %></span>
+            <span class="num"><%= r.n %> reservas</span>
+          </li>
+        <% }) %>
+      </ol>
+    <% } %>
     <div class="trofeu"><img class="trofeu-img" src="Parque_Terror_Trofeu_Dourado-E.png" alt="Trofeu Dourado"></div>
-    <% if (s.topV) { %><span class="destaque"><%= s.topV.n %> reservas</span><% } %>
   </section>
 </div>
 <%- include('partials/foot') %>
