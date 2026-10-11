@@ -1,3 +1,26 @@
+/**
+ * ============================================================
+ *  SERVER — Camada HTTP
+ * ============================================================
+ *
+ * Este arquivo SÓ faz:
+ *   1. Ler a requisição (req.body, req.query, cookies)
+ *   2. Chamar o Parque
+ *   3. Passar o resultado para a view (res.render)
+ *   4. Devolver a resposta (redirect, render)
+ *
+ * Toda regra de negócio vive nas classes (Parque, Visitante,
+ * Atracao, Reserva, Sessao, FilaVirtual). Aqui não tem `if`
+ * de validação nem cálculo.
+ *
+ * ------------------------------------------------------------
+ * CONTRATO DAS VIEWS
+ * ------------------------------------------------------------
+ *
+ * Cada `res.render` abaixo documenta o formato dos dados que a
+ * view recebe. Listas encadeadas são convertidas em array AQUI,
+ * na borda, para a view só percorrer com forEach/map.
+ */
 const path = require('path');
 const express = require('express');
 const parque = require('./models/Parque');
@@ -20,11 +43,19 @@ app.locals.fmt = s => s ? `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)} -
 const cookies = req => Object.fromEntries((req.headers.cookie || '').split('; ').filter(Boolean).map(c => c.split('=')));
 
 // ---------- Início, métricas e créditos ----------
+
+// View 'index': { aba: '' }
 app.get('/', (req, res) => res.render('index', { aba: '' }));
+
+// View 'metricas': { aba: 'metricas', s: { total, comuns, vip, topA, topV } }
 app.get('/metricas', (req, res) => res.render('metricas', { aba: 'metricas', s: parque.stats() }));
+
+// View 'creditos': { aba: 'creditos' }
 app.get('/creditos', (req, res) => res.render('creditos', { aba: 'creditos' }));
 
 // ---------- Visitantes ----------
+
+// View 'visitantes/cadastro': { aba, sub, erro, d }
 app.get('/visitantes', (req, res) =>
   res.render('visitantes/cadastro', { aba: 'visitantes', sub: 'cadastro', erro: null, d: {} }));
 
@@ -46,6 +77,19 @@ app.post('/visitantes', (req, res) => {
   }
 });
 
+/**
+ * View 'visitantes/painel': {
+ *   aba, sub, ok, erro,
+ *   v:          Visitante | null
+ *   visitantes: [{ id, nome }]
+ *   atracoes:   [{
+ *     id, nome, tipo, capacidade, idade_minima, vip, menor,
+ *     horas: [{ h, n, ja, passou }]
+ *   }]
+ *   minhas:     [{ atracao, horario, posicao }]
+ *   historico:  [{ id, atracao, horario, status, entrou_em, embarcou_em }]
+ * }
+ */
 app.get('/visitantes/painel', (req, res) => {
   if (req.query.visitante !== undefined) res.cookie('visitante', req.query.visitante);
   const id = req.query.visitante ?? cookies(req).visitante;
@@ -53,6 +97,7 @@ app.get('/visitantes/painel', (req, res) => {
 
   let painel = { atracoes: [], minhas: [], historico: [] };
   if (v) {
+    // Lista de atrações com o estado da fila para esse visitante
     const atracoes = parque.listarAtracoes().map(a => {
       const horas = [];
       for (const s of a.sessoes) {
@@ -75,6 +120,7 @@ app.get('/visitantes/painel', (req, res) => {
       };
     });
 
+    // Histórico de reservas do visitante
     const historico = parque.historico.porVisitante(v.id).map(r => ({
       id: r.id,
       atracao: r.atracao.nome,
@@ -84,6 +130,7 @@ app.get('/visitantes/painel', (req, res) => {
       embarcou_em: r.embarcouEm
     }));
 
+    // Reservas aguardando (com a posição)
     const minhas = [];
     for (const a of parque.listarAtracoes()) {
       for (const s of a.sessoes) {
@@ -104,14 +151,17 @@ app.get('/visitantes/painel', (req, res) => {
   });
 });
 
+// Redireciona sempre, não renderiza nada.
 app.post('/visitantes/fila', (req, res) => {
   const erro = parque.entrarNaFila(+cookies(req).visitante, +req.body.atracao_id, req.body.horario);
   res.redirect('/visitantes/painel?' + (erro ? 'erro=' + encodeURIComponent(erro) : 'ok=fila'));
 });
 
 // ---------- Atrações ----------
+
 const TIPOS = ['montanha-russa', 'trem fantasma', 'casa assombrada', 'labirinto', 'simulador', 'teatro'];
 
+// View 'atracoes/cadastro': { aba, sub, erro, d, TIPOS }
 app.get('/atracoes', (req, res) =>
   res.render('atracoes/cadastro', { aba: 'atracoes', sub: 'cadastro', erro: null, d: {}, TIPOS }));
 
@@ -132,6 +182,18 @@ app.post('/atracoes', (req, res) => {
   }
 });
 
+/**
+ * View 'atracoes/painel': {
+ *   aba, sub, msg,
+ *   linhas: [{
+ *     id, nome, tipo, capacidade, idade_minima, vip,
+ *     horarios: 'string,com,virgulas',
+ *     sessao:   'HH:MM' | null,     ← próximo horário com fila (ou o primeiro)
+ *     total:    number,
+ *     proximos: [Reserva]           ← array (já convertido)
+ *   }]
+ * }
+ */
 app.get('/atracoes/painel', (req, res) => {
   const linhas = parque.listarAtracoes().map(a => {
     const sessoes = [...a.sessoes].map(s => ({
@@ -158,6 +220,7 @@ app.get('/atracoes/painel', (req, res) => {
   res.render('atracoes/painel', { aba: 'atracoes', sub: 'painel', linhas, msg: req.query.msg });
 });
 
+// Redireciona sempre, não renderiza nada.
 app.post('/atracoes/:id/embarcar', (req, res) => {
   const r = parque.embarcar(+req.params.id);
   const msg = r ? `Sessão das ${r.horario}: ${r.total} visitante(s) embarcaram.` : 'Ninguém na fila.';

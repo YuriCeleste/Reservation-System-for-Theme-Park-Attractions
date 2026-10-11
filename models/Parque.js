@@ -3,9 +3,8 @@
  *  PARQUE
  * ============================================================
  *
- * A classe Parque é o "cérebro" do sistema. Ela é o ponto único
- * de armazenamento e de regras de negócio. Tudo o que o server.js
- * faz é chamar métodos dela e repassar os resultados.
+ * A classe Parque é o "cérebro" do sistema. Ponto único de
+ * armazenamento e regras de negócio. O server.js só repassa dados.
  *
  * ------------------------------------------------------------
  * O QUE ELA GUARDA
@@ -14,29 +13,45 @@
  *   1. LISTAS ENCADEADAS
  *      - visitantes  → ListaVisitantes
  *      - atracoes    → ListaAtracoes
- *      - historico   → ListaHistorico (todas as reservas)
+ *      - historico   → ListaHistorico
  *
  *   2. CONTADORES
  *      - contadorVisitante, contadorAtracao, contadorReserva
- *      - Cada um gera IDs sequenciais. Substituem o AUTOINCREMENT
- *        do SQLite (a issue #5 pede isso).
+ *      - Substituem o AUTOINCREMENT do SQLite (issue #5).
  *
  *   3. RELÓGIO
- *      - Injetável. Em modo demo (npm run demo), fica "parado"
- *        para as sessões estarem sempre abertas.
- *      - Nenhuma classe lê a hora direto: sempre usa o relógio.
+ *      - Injetável. Em modo demo (npm run demo), fica parado.
+ *      - Nenhuma classe lê a hora direto.
  *
  * ------------------------------------------------------------
- * O QUE ELA FAZ
+ * CONTRATO DOS MÉTODOS QUE LEVANTAM ERRO
  * ------------------------------------------------------------
  *
- *   - cadastrarVisitante(dados)
- *   - cadastrarAtracao(dados)
- *   - entrarNaFila(visitanteId, atracaoId, horario)
- *   - embarcar(atracaoId)
- *   - sairDaFila(visitanteId, atracaoId, horario)
- *   - trocarHorario(visitanteId, atracaoId, horarioAtual, novoHorario)
- *   - stats()  → total do dia, comuns, VIP, top atração, top visitante
+ *   cadastrarVisitante(dados) → Visitante | lança Error
+ *     Erros: 'CPF ou e-mail já cadastrado.'
+ *            (validações da classe Visitante)
+ *
+ *   cadastrarAtracao(dados)   → Atracao | lança Error
+ *     Erros: (validações da classe Atracao)
+ *
+ * ------------------------------------------------------------
+ * CONTRATO DOS MÉTODOS QUE DEVOLVEM STRING DE ERRO
+ * ------------------------------------------------------------
+ *
+ *   entrarNaFila(visitanteId, atracaoId, horario) → string | null
+ *     'Visitante ou atração não encontrados.'
+ *     'Horário inválido para esta atração.'
+ *     'Idade mínima para esta atração: N anos.'
+ *     'Esse horário já passou.'
+ *     'Você já está nessa fila.'
+ *
+ *   trocarHorario(...) → string | null
+ *     'Visitante ou atração não encontrados.'
+ *     'Você não está na fila do horário atual.'
+ *     'Horário inválido.'
+ *     'Você já está nessa fila.'
+ *     'Idade mínima para esta atração: N anos.'
+ *     'Esse horário já passou.'
  */
 class Parque {
   // Listas encadeadas (substituem o SQLite)
@@ -70,14 +85,17 @@ class Parque {
   //  CADASTROS
   // ==========================================================
 
+  /**
+   * Cadastra um visitante.
+   * @returns {Visitante} o visitante cadastrado
+   * @throws {Error} 'CPF ou e-mail já cadastrado.' ou validação da classe
+   */
   cadastrarVisitante(dados) {
     const Visitante = require('./Visitante');
 
-    if (this.#visitantes.buscarPorCpf(dados.cpf)) {
-      throw new Error('CPF já cadastrado.');
-    }
-    if (this.#visitantes.buscarPorEmail(dados.email)) {
-      throw new Error('E-mail já cadastrado.');
+    // Verifica duplicidade ANTES de criar (mensagem unificada)
+    if (this.#visitantes.buscarPorCpf(dados.cpf) || this.#visitantes.buscarPorEmail(dados.email)) {
+      throw new Error('CPF ou e-mail já cadastrado.');
     }
 
     const v = new Visitante({
@@ -94,6 +112,11 @@ class Parque {
     return v;
   }
 
+  /**
+   * Cadastra uma atração.
+   * @returns {Atracao} a atração cadastrada
+   * @throws {Error} validação da classe Atracao
+   */
   cadastrarAtracao(dados) {
     const Atracao = require('./Atracao');
     const a = new Atracao({
@@ -134,6 +157,10 @@ class Parque {
   //  FILA VIRTUAL
   // ==========================================================
 
+  /**
+   * Coloca o visitante na fila de uma atração + horário.
+   * @returns {string|null} mensagem de erro, ou null se deu certo
+   */
   entrarNaFila(visitanteId, atracaoId, horario) {
     const Reserva = require('./Reserva');
     const v = this.buscarVisitante(visitanteId);
@@ -163,6 +190,10 @@ class Parque {
     return null;
   }
 
+  /**
+   * Embarca o próximo horário com gente na fila, até a capacidade.
+   * @returns {{horario: string, total: number}|null}
+   */
   embarcar(atracaoId) {
     const a = this.buscarAtracao(atracaoId);
     if (!a) return null;
@@ -186,6 +217,7 @@ class Parque {
     return { horario, total };
   }
 
+  /** Tira o visitante da fila (sem embarcar). @returns {Reserva|null} */
   sairDaFila(visitanteId, atracaoId, horario) {
     const v = this.buscarVisitante(visitanteId);
     const a = this.buscarAtracao(atracaoId);
@@ -195,6 +227,10 @@ class Parque {
     return sessao.fila.sairDaFila(v);
   }
 
+  /**
+   * Move o visitante de uma fila para outra (mesma atração, horário diferente).
+   * @returns {string|null} mensagem de erro, ou null se deu certo
+   */
   trocarHorario(visitanteId, atracaoId, horarioAtual, novoHorario) {
     const v = this.buscarVisitante(visitanteId);
     const a = this.buscarAtracao(atracaoId);
@@ -233,6 +269,10 @@ class Parque {
   //  ESTATÍSTICAS
   // ==========================================================
 
+  /**
+   * Estatísticas do dia, percorrendo o histórico (sem SQL).
+   * @returns {{total, vip, comuns, topA, topV}}
+   */
   stats() {
     const hoje = this.#relogio.hoje();
 
@@ -258,6 +298,7 @@ class Parque {
     return { total, vip, comuns: total - vip, topA, topV };
   }
 
+  /** Auxiliar: dada uma contagem { id: n }, devolve { nome, n } do maior. */
   #top(contagem, nomeDe) {
     let melhorId = null, melhorN = 0;
     for (const [id, n] of contagem) {
