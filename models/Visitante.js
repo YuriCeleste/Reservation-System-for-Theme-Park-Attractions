@@ -1,4 +1,4 @@
-const Ingresso = require('./ingresso');
+const Ingresso = require('./Ingresso');
 const db = require('../db');
 
 class Visitante {

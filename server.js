@@ -2,9 +2,9 @@ const path = require('path');
 const express = require('express');
 const db = require('./db');
 const f = require('./filas');
-const Ingresso = require('./src/ingresso');
-const Visitante = require('./src/visitante');
-const Atracao = require('./src/atracao');
+const Ingresso = require('./models/Ingresso');
+const Visitante = require('./models/Visitante');
+const Atracao = require('./models/Atracao');
 
 const app = express();
 app.set('view engine', 'ejs');

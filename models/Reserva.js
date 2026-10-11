@@ -1,6 +1,6 @@
 const db = require('../db');
-const Visitante = require('./visitante');
-const Atracao = require('./atracao');
+const Visitante = require('./Visitante');
+const Atracao = require('./Atracao');
 
 class Reserva {
   #visitante;

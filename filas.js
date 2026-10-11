@@ -1,8 +1,8 @@
 const db = require('./db');
 const FilaEncadeada = require('./fila-encadeada');
-const Visitante = require('./src/visitante');
-const Atracao = require('./src/atracao');
-const Reserva = require('./src/reserva');
+const Visitante = require('./models/Visitante');
+const Atracao = require('./models/Atracao');
+const Reserva = require('./models/Reserva');
 
 // "npm run demo" ignora a hora real (útil para apresentar fora do horário das sessões)
 const SEM_HORA = process.argv.includes('--sem-hora');

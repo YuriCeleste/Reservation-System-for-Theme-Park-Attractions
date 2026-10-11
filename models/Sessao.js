@@ -1,4 +1,4 @@
-const Atracao = require('./atracao');
+const Atracao = require('./Atracao');
 
 class Sessao {
   #atracao;
