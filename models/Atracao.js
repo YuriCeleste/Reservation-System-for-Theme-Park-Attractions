@@ -1,11 +1,12 @@
 const db = require('../db');
+const Sessao = require('./Sessao');
 
 class Atracao {
   #nome;
   #tipo;
   #capacidade;
   #idadeMinima;
-  #horarios;
+  #sessoes;     // ← array de Sessao (não mais de strings)
   #filaVip;
 
   id = null;
@@ -29,12 +30,29 @@ class Atracao {
     this.#tipo = tipo;
     this.#capacidade = +capacidade;
     this.#idadeMinima = +idadeMinima;
-    this.#horarios = lista.sort();
     this.#filaVip = !!filaVip;
+
+    // Cria uma Sessao por horário
+    this.#sessoes = lista.sort().map(h => new Sessao(this, h));
   }
 
   aceitaVip() {
     return this.#filaVip;
+  }
+
+  // Retorna a Sessao do horário, ou null
+  sessao(horario) {
+    return this.#sessoes.find(s => s.horario === horario) || null;
+  }
+
+  // Lista todos os horários (strings)
+  horarios() {
+    return this.#sessoes.map(s => s.horario);
+  }
+
+  // Lista todas as Sessoes
+  sessoes() {
+    return this.#sessoes;
   }
 
   salvar() {
@@ -43,7 +61,7 @@ class Atracao {
       VALUES (?, ?, ?, ?, ?, ?)
     `).run(
       this.#nome, this.#tipo, this.#capacidade, this.#idadeMinima,
-      this.#horarios.join(','), this.#filaVip ? 1 : 0
+      this.horarios().join(','), this.#filaVip ? 1 : 0
     );
     this.id = r.lastInsertRowid;
     return this.id;
@@ -77,7 +95,6 @@ class Atracao {
   get tipo()        { return this.#tipo; }
   get capacidade()  { return this.#capacidade; }
   get idadeMinima() { return this.#idadeMinima; }
-  get horarios()    { return this.#horarios; }
   get filaVip()     { return this.#filaVip; }
 }
 

@@ -1,4 +1,3 @@
-const Atracao = require('./Atracao');
 const FilaVirtual = require('./FilaVirtual');
 
 class Sessao {
@@ -7,7 +6,7 @@ class Sessao {
   #fila;
 
   constructor(atracao, horario) {
-    if (!(atracao instanceof Atracao)) throw new Error('Sessao precisa de uma Atracao.');
+    if (!atracao) throw new Error('Sessao precisa de uma Atracao.');
     if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(horario)) throw new Error('Horário no formato HH:MM.');
 
     this.#atracao = atracao;
