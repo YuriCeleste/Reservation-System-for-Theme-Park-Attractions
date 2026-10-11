@@ -1,5 +1,6 @@
 const db = require('./db');
 const FilaEncadeada = require('./fila-encadeada');
+const Ingresso = require('./src/ingresso');
 
 // "npm run demo" ignora a hora real (útil para apresentar fora do horário das sessões)
 const SEM_HORA = process.argv.includes('--sem-hora');
@@ -44,7 +45,8 @@ function entrar(visitanteId, atracaoId, horario) {
   if (idade(v.nascimento) < a.idade_minima) return `Idade mínima para esta atração: ${a.idade_minima} anos.`;
   if (!horarioAberto(horario)) return 'Esse horário já passou.';
   if (fila(a.id, horario).some(r => r.visitante_id === v.id)) return 'Você já está nessa fila.';
-  const vip = a.vip && v.ingresso === 'vip' ? 1 : 0; // sem fila VIP, o VIP entra como normal
+  const ingresso = Ingresso.criar(v.ingresso);
+  const vip = a.vip && ingresso.prioridade() > 0 ? 1 : 0; // sem fila VIP, o VIP entra como normal
   const r = db.prepare('INSERT INTO reservas (visitante_id, atracao_id, horario, vip, entrou_em) VALUES (?,?,?,?,?)')
     .run(v.id, a.id, horario, vip, agora());
   getFila(a.id, horario).enfileirar({ id: r.lastInsertRowid, visitante_id: v.id, nome: v.nome, vip }); // entra na fila encadeada

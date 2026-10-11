@@ -1,5 +1,5 @@
 <%- include('../partials/head') %>
-<form class="card" method="post" action="/atracoes">
+<form class="card" method="post" action="/atracoes" id="f">
   <h2>Cadastro da Atração</h2>
   <% if (erro) { %><p class="erro"><%= erro %></p><% } %>
   <label>Nome <input name="nome" value="<%= d.nome || '' %>" required></label>
@@ -10,7 +10,9 @@
     <label>Capacidade máxima por sessão <input type="number" name="capacidade" min="1" value="<%= d.capacidade || '' %>" required></label>
     <label>Idade mínima <input type="number" name="idade_minima" min="0" value="<%= d.idade_minima || 0 %>"></label>
   </div>
-  <label>Horários (HH:MM, separados por vírgula) <input name="horarios" placeholder="09:00, 14:00, 18:00" value="<%= d.horarios || '' %>" required></label>
+  <label>Horários (HH:MM, separados por vírgula)
+    <input name="horarios" placeholder="09:00, 14:00, 18:00" value="<%= d.horarios || '' %>" required inputmode="numeric">
+  </label>
   <fieldset>
     <legend>Possui fila prioritária (fila VIP)?</legend>
     <label><input type="radio" name="vip" value="sim" <%= d.vip !== 'nao' ? 'checked' : '' %>> Sim</label>
@@ -18,4 +20,32 @@
   </fieldset>
   <button class="btn">Cadastrar</button>
 </form>
+<script>
+  const f = document.getElementById('f');
+
+  // Formata horários como "HH:MM, HH:MM, HH:MM" enquanto digita
+  f.horarios.addEventListener('input', e => {
+    // 1. Remove tudo que não é dígito
+    let v = e.target.value.replace(/\D/g, '');
+
+    // 2. Limita a 4 dígitos por horário * 6 horários = 24 dígitos
+    v = v.slice(0, 24);
+
+    // 3. Insere ":" depois de 2 dígitos e ", " a cada 4 dígitos
+    let formatado = '';
+    for (let i = 0; i < v.length; i++) {
+      if (i > 0 && i % 4 === 0) formatado += ', ';
+      if (i > 0 && i % 4 === 2) formatado += ':';
+      formatado += v[i];
+    }
+
+    // 4. Preserva a posição do cursor
+    const pos = e.target.selectionStart;
+    const antes = e.target.value.length;
+    e.target.value = formatado;
+    const depois = formatado.length;
+    const novoCursor = pos + (depois - antes);
+    e.target.setSelectionRange(novoCursor, novoCursor);
+  });
+</script>
 <%- include('../partials/foot') %>

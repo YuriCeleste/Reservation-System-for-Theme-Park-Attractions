@@ -17,7 +17,7 @@
 
   <dialog id="dlg">
     <h2>Cartão de crédito</h2>
-    <label>Número <input name="cartao_numero" inputmode="numeric" maxlength="23" autocomplete="off"></label>
+    <label>Número <input name="cartao_numero" inputmode="numeric" maxlength="23" autocomplete="off" placeholder="0000 0000 0000 0000"></label>
     <div class="duas">
       <label>Validade <input name="cartao_validade" placeholder="MM/AA" maxlength="5"></label>
       <label>Nome no cartão <input name="cartao_nome"></label>
@@ -36,11 +36,24 @@
   const vip = document.getElementById('vip'), add = document.getElementById('addcartao');
   add.onclick = () => dlg.showModal();
   document.getElementById('cancelar').onclick = () => dlg.close();
+
+  // Número: formata como "0000 0000 0000 0000"
+  f.cartao_numero.addEventListener('input', e => {
+    let v = e.target.value.replace(/\D/g, '').slice(0, 19);
+    e.target.value = v.replace(/(\d{4})(?=\d)/g, '$1 ');
+  });
+
+  // Validade: formata como "MM/AA"
+  f.cartao_validade.addEventListener('input', e => {
+    let v = e.target.value.replace(/\D/g, '').slice(0, 4);
+    e.target.value = v.length >= 3 ? v.slice(0, 2) + '/' + v.slice(2) : v;
+  });
+
   const confirmar = document.getElementById('confirmar');
   confirmar.onclick = () => {
     const n = f.cartao_numero.value.replace(/\D/g, '');
     if (!/^\d{13,19}$/.test(n) || !/^\d{2}\/\d{2}$/.test(f.cartao_validade.value) || !f.cartao_nome.value.trim()) {
-      cerro.textContent = 'Confira o número, a validade (MM/AA) e o nome no cartão.';
+      cerro.textContent = 'Confira o número (13-19 dígitos), a validade (MM/AA) e o nome no cartão.';
       cerro.hidden = false;
       return;
     }
