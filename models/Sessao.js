@@ -1,8 +1,10 @@
 const Atracao = require('./Atracao');
+const FilaVirtual = require('./FilaVirtual');
 
 class Sessao {
   #atracao;
   #horario;
+  #fila;
 
   constructor(atracao, horario) {
     if (!(atracao instanceof Atracao)) throw new Error('Sessao precisa de uma Atracao.');
@@ -10,7 +12,10 @@ class Sessao {
 
     this.#atracao = atracao;
     this.#horario = horario;
+    this.#fila = new FilaVirtual();
   }
+
+  // ---------- Identificação ----------
 
   chave() {
     return `${this.#atracao.id}|${this.#horario}`;
@@ -21,12 +26,42 @@ class Sessao {
     return this.#horario < agora;
   }
 
-  capacidadeRestante(qtdNaFila) {
-    return this.#atracao.capacidade - qtdNaFila;
+  capacidadeRestante() {
+    return this.#atracao.capacidade - this.#fila.tamanho;
   }
 
-  get atracao() { return this.#atracao; }
-  get horario() { return this.#horario; }
+  // ---------- Operações da fila (delegação) ----------
+
+  enfileirar(reserva) {
+    return this.#fila.enfileirar(reserva);
+  }
+
+  desenfileirar() {
+    return this.#fila.desenfileirar();
+  }
+
+  posicaoDe(visitante) {
+    return this.#fila.posicaoDe(visitante);
+  }
+
+  buscarPorVisitante(visitante) {
+    return this.#fila.buscarPorVisitante(visitante);
+  }
+
+  sairDaFila(visitante) {
+    return this.#fila.sairDaFila(visitante);
+  }
+
+  proximos(n) {
+    return this.#fila.proximos(n);
+  }
+
+  // ---------- Getters ----------
+
+  get atracao()  { return this.#atracao; }
+  get horario()  { return this.#horario; }
+  get fila()     { return this.#fila; }
+  get tamanho()  { return this.#fila.tamanho; }
 }
 
 module.exports = Sessao;
