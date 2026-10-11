@@ -2,70 +2,31 @@
  * ============================================================
  *  PARQUE
  * ============================================================
- *
- * A classe Parque é o "cérebro" do sistema. Ponto único de
- * armazenamento e regras de negócio. O server.js só repassa dados.
- *
- * ------------------------------------------------------------
- * O QUE ELA GUARDA
- * ------------------------------------------------------------
- *
- *   1. LISTAS ENCADEADAS
- *      - visitantes  → ListaVisitantes
- *      - atracoes    → ListaAtracoes
- *      - historico   → ListaHistorico
- *
- *   2. CONTADORES
- *      - contadorVisitante, contadorAtracao, contadorReserva
- *      - Substituem o AUTOINCREMENT do SQLite (issue #5).
- *
- *   3. RELÓGIO
- *      - Injetável. Em modo demo (npm run demo), fica parado.
- *      - Nenhuma classe lê a hora direto.
+ * A classe Parque é o "cérebro" do sistema.
+ * Ela guarda as listas encadeadas, os contadores de IDs, o relógio
+ * e todas as regras de negócio. O server.js só repassa dados.
  *
  * ------------------------------------------------------------
- * CONTRATO DOS MÉTODOS QUE LEVANTAM ERRO
+ * SOBRE A estruturaDaFila()
  * ------------------------------------------------------------
+ * Devolve a fila "crua" para a view desenhar como lista encadeada:
+ *   { nos, inicio, fim, ultimoVip, tamanho }
  *
- *   cadastrarVisitante(dados) → Visitante | lança Error
- *     Erros: 'CPF ou e-mail já cadastrado.'
- *
- *   cadastrarAtracao(dados)   → Atracao | lança Error
- *
- * ------------------------------------------------------------
- * CONTRATO DOS MÉTODOS QUE DEVOLVEM STRING DE ERRO
- * ------------------------------------------------------------
- *
- *   entrarNaFila(visitanteId, atracaoId, horario) → string | null
- *   trocarHorario(...) → string | null
- *
- * ------------------------------------------------------------
- * SOBRE A stats()
- * ------------------------------------------------------------
- *
- * A stats() usa o `ordenar()` da ListaDuplamenteEncadeada (issue
- * #1) para montar o ranking de atrações e visitantes do dia.
- *
- * O fluxo é:
- *   1. Filtra as reservas do dia percorrendo o histórico
- *   2. Conta manualmente (comuns, VIP, por atração, por visitante)
- *   3. Monta duas listas encadeadas (ranking de atrações e ranking
- *      de visitantes) com os contadores
- *   4. Chama `ordenar()` em cada ranking (decrescente por n)
- *   5. Pega o topo (inicio) de cada ranking
+ * - nos:       [{ nome, vip }, ...] na ordem da fila
+ * - inicio:    nome do primeiro nó
+ * - fim:       nome do último nó
+ * - ultimoVip: nome do último VIP (ou null)
+ * - tamanho:   quantidade de nós
  */
 class Parque {
-  // Listas encadeadas (substituem o SQLite)
   #visitantes = new (require('./ListaVisitantes'))();
   #atracoes = new (require('./ListaAtracoes'))();
   #historico = new (require('./ListaHistorico'))();
 
-  // Contadores de IDs
   #contadorVisitante = new (require('./Contador'))();
   #contadorAtracao = new (require('./Contador'))();
   #contadorReserva = new (require('./Contador'))();
 
-  // Relógio injetável
   #relogio;
 
   constructor(relogio) {
@@ -76,7 +37,6 @@ class Parque {
   // ==========================================================
   //  GETTERS
   // ==========================================================
-
   get relogio()    { return this.#relogio; }
   get visitantes() { return this.#visitantes; }
   get atracoes()   { return this.#atracoes; }
@@ -85,19 +45,11 @@ class Parque {
   // ==========================================================
   //  CADASTROS
   // ==========================================================
-
-  /**
-   * Cadastra um visitante.
-   * @returns {Visitante}
-   * @throws {Error} 'CPF ou e-mail já cadastrado.' ou validação da classe
-   */
   cadastrarVisitante(dados) {
     const Visitante = require('./Visitante');
-
     if (this.#visitantes.buscarPorCpf(dados.cpf) || this.#visitantes.buscarPorEmail(dados.email)) {
       throw new Error('CPF ou e-mail já cadastrado.');
     }
-
     const v = new Visitante({
       id: this.#contadorVisitante.proximoId(),
       nome: dados.nome,
@@ -112,11 +64,6 @@ class Parque {
     return v;
   }
 
-  /**
-   * Cadastra uma atração.
-   * @returns {Atracao}
-   * @throws {Error} validação da classe Atracao
-   */
   cadastrarAtracao(dados) {
     const Atracao = require('./Atracao');
     const a = new Atracao({
@@ -135,7 +82,6 @@ class Parque {
   // ==========================================================
   //  CONSULTAS
   // ==========================================================
-
   buscarVisitante(id)        { const no = this.#visitantes.buscar(v => v.id === id); return no ? no.dado : null; }
   buscarVisitantePorCpf(cpf) { return this.#visitantes.buscarPorCpf(cpf); }
   buscarVisitantePorEmail(e) { return this.#visitantes.buscarPorEmail(e); }
@@ -156,11 +102,6 @@ class Parque {
   // ==========================================================
   //  FILA VIRTUAL
   // ==========================================================
-
-  /**
-   * Coloca o visitante na fila de uma atração + horário.
-   * @returns {string|null}
-   */
   entrarNaFila(visitanteId, atracaoId, horario) {
     const Reserva = require('./Reserva');
     const v = this.buscarVisitante(visitanteId);
@@ -190,10 +131,6 @@ class Parque {
     return null;
   }
 
-  /**
-   * Embarca o próximo horário com gente na fila, até a capacidade.
-   * @returns {{horario: string, total: number}|null}
-   */
   embarcar(atracaoId) {
     const a = this.buscarAtracao(atracaoId);
     if (!a) return null;
@@ -217,7 +154,6 @@ class Parque {
     return { horario, total };
   }
 
-  /** Tira o visitante da fila (sem embarcar). @returns {Reserva|null} */
   sairDaFila(visitanteId, atracaoId, horario) {
     const v = this.buscarVisitante(visitanteId);
     const a = this.buscarAtracao(atracaoId);
@@ -227,10 +163,6 @@ class Parque {
     return sessao.fila.sairDaFila(v);
   }
 
-  /**
-   * Move o visitante de uma fila para outra.
-   * @returns {string|null}
-   */
   trocarHorario(visitanteId, atracaoId, horarioAtual, novoHorario) {
     const v = this.buscarVisitante(visitanteId);
     const a = this.buscarAtracao(atracaoId);
@@ -266,34 +198,53 @@ class Parque {
   }
 
   // ==========================================================
+  //  ESTRUTURA DA FILA (para a view desenhar como lista encadeada)
+  // ==========================================================
+  /**
+   * Devolve a fila "crua" para a view desenhar como lista encadeada.
+   *
+   * @param {number} atracaoId
+   * @param {string} horario
+   * @returns {{nos, inicio, fim, ultimoVip, tamanho}}
+   */
+  estruturaDaFila(atracaoId, horario) {
+    const a = this.buscarAtracao(atracaoId);
+    if (!a) return { nos: [], inicio: null, fim: null, ultimoVip: null, tamanho: 0 };
+    const sessao = a.buscarSessao(horario);
+    if (!sessao) return { nos: [], inicio: null, fim: null, ultimoVip: null, tamanho: 0 };
+
+    const fila = sessao.fila;
+    const nos = [];
+    for (const r of fila) {
+      nos.push({
+        nome: r.visitante.nome,
+        vip: r.prioritaria,
+        // id para o front, se quiser usar em animação
+        id: r.id
+      });
+    }
+
+    return {
+      nos,
+      inicio: fila.inicio ? fila.inicio.dado.visitante.nome : null,
+      fim: fila.fim ? fila.fim.dado.visitante.nome : null,
+      ultimoVip: fila.ultimoVip ? fila.ultimoVip.dado.visitante.nome : null,
+      tamanho: fila.tamanho
+    };
+  }
+
+  // ==========================================================
   //  ESTATÍSTICAS
   // ==========================================================
-
-  /**
-   * Estatísticas do dia, percorrendo o histórico (sem SQL).
-   *
-   * Usa o `ordenar()` da ListaDuplamenteEncadeada (issue #1) para
-   * montar os rankings. Fluxo:
-   *
-   *   1. Filtra as reservas do dia (percorrendo #historico)
-   *   2. Conta manualmente: total, VIP, por atração, por visitante
-   *   3. Monta uma lista encadeada para cada ranking
-   *   4. Chama `ordenar()` (decrescente por n)
-   *   5. Pega o topo (inicio) de cada ranking
-   *
-   * @returns {{total, vip, comuns, topA, topV}}
-   */
   stats() {
     const ListaDuplamenteEncadeada = require('./ListaDuplamenteEncadeada');
     const hoje = this.#relogio.hoje();
 
-    // 1. Filtra as reservas do dia
     const doDia = [];
     for (const r of this.#historico) {
       if (r.entrouEm.slice(0, 10) === hoje) doDia.push(r);
     }
 
-    // 2. Contadores manuais
     let total = 0, vip = 0;
     const contAtracao = new Map();
     const contVisitante = new Map();
@@ -305,7 +256,6 @@ class Parque {
       contVisitante.set(r.visitante.id, (contVisitante.get(r.visitante.id) || 0) + 1);
     }
 
-    // 3. Monta os rankings em listas encadeadas
     const rankingAtracao = new ListaDuplamenteEncadeada();
     for (const [id, n] of contAtracao) {
       rankingAtracao.inserirNoFim({ id, n, nome: this.buscarAtracao(id)?.nome });
@@ -316,11 +266,9 @@ class Parque {
       rankingVisitante.inserirNoFim({ id, n, nome: this.buscarVisitante(id)?.nome });
     }
 
-    // 4. Ordena decrescente (maior n primeiro) — usa o `ordenar` da lista
     rankingAtracao.ordenar((a, b) => b.n - a.n);
     rankingVisitante.ordenar((a, b) => b.n - a.n);
 
-    // 5. Pega o topo dos rankings
     const topA = rankingAtracao.inicio ? rankingAtracao.inicio.dado : null;
     const topV = rankingVisitante.inicio ? rankingVisitante.inicio.dado : null;
 
@@ -334,5 +282,4 @@ class Parque {
   }
 }
 
-// Singleton: uma instância única para todo o projeto.
 module.exports = new Parque();

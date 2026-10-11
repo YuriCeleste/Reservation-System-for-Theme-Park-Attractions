@@ -121,12 +121,8 @@ app.get('/atracoes/painel', (req, res) => {
     }));
 
     return {
-      id: a.id,
-      nome: a.nome,
-      tipo: a.tipo,
-      capacidade: a.capacidade,
-      idade_minima: a.idadeMinima,
-      vip: a.filaVip ? 1 : 0,
+      id: a.id, nome: a.nome, tipo: a.tipo, capacidade: a.capacidade,
+      idade_minima: a.idadeMinima, vip: a.filaVip ? 1 : 0,
       sessoes
     };
   });

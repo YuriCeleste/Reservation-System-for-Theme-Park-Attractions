@@ -774,3 +774,192 @@ main.cinza.fundo-teto h2 {
   flex: 1;
   min-width: 10rem;
 }
+/* ============================================================
+   PAINEL DE ATRAÇÕES — cards + corrente visual
+   ============================================================ */
+
+/* Bloco de cada sessão (horário) */
+.sessao-bloco {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  border-left: 3px solid var(--roxo);
+}
+
+.sessao-header {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 0.6rem;
+}
+
+.sessao-header strong {
+  font-family: "Hedvig Letters Serif", serif;
+  font-size: 1.3rem;
+  font-weight: 400;
+  background: var(--roxo);
+  color: #fff;
+  padding: 0.2rem 0.8rem;
+  border-radius: 6px;
+}
+
+.sessao-header span {
+  font-size: 0.85rem;
+  color: #1b1b1b;
+}
+
+/* ---------- A CORRENTE ---------- */
+.fila-encadeada {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 1rem 0.6rem 0.8rem;
+  margin: 0.6rem 0;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+  border: 1px dashed rgba(118, 47, 120, 0.4);
+  position: relative;
+}
+
+/* Cada nó (visitante) */
+.no {
+  padding: 0.35rem 0.8rem;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #6b6b70 0%, #3a3a3e 100%);
+  color: #fff;
+  font-family: "Cinzel", serif;
+  font-size: 0.8rem;
+  letter-spacing: 0.03em;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: transform 0.4s ease, opacity 0.4s ease;
+  white-space: nowrap;
+}
+
+/* VIP: fundo roxo + estrela dourada */
+.no.vip {
+  background: linear-gradient(180deg, #8a3a8c 0%, #4a1a4d 100%);
+  border-color: rgba(212, 175, 55, 0.6);
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+}
+
+.no .estrela {
+  color: #d4af37;
+  margin-left: 0.15rem;
+}
+
+/* Nó null (fim da lista) */
+.no.null {
+  background: transparent;
+  border: 1px dashed rgba(60, 18, 62, 0.5);
+  color: rgba(60, 18, 62, 0.6);
+  font-style: italic;
+  box-shadow: none;
+}
+
+/* Setinhas */
+.seta {
+  color: var(--roxo);
+  font-weight: bold;
+  font-size: 1rem;
+  user-select: none;
+}
+
+/* Rótulos inicio/fim */
+.rotulo {
+  position: absolute;
+  font-family: "Cinzel", serif;
+  font-size: 0.65rem;
+  color: var(--roxo-escuro);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: #f8f8f8;
+  padding: 0.1rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid rgba(60, 18, 62, 0.3);
+}
+
+.rotulo-inicio {
+  top: -0.55rem;
+  left: 0.5rem;
+}
+
+.rotulo-fim {
+  bottom: -0.55rem;
+  right: 0.5rem;
+}
+
+/* Texto "último VIP" */
+.ultimo-vip {
+  font-family: "Cinzel", serif;
+  font-size: 0.8rem;
+  color: var(--roxo-escuro);
+  text-align: center;
+  margin: 0.4rem 0;
+}
+
+.ultimo-vip strong {
+  color: #8a3a8c;
+}
+
+/* Animação de saída do primeiro nó */
+.no.saindo {
+  transform: translateY(-30px) scale(0.7);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Fila vazia */
+.fila-vazia-mini {
+  font-size: 0.8rem;
+  color: #666;
+  font-style: italic;
+  margin: 0.4rem 0;
+  text-align: center;
+}
+
+/* Botão EMBARCAR */
+.sessao-bloco .pill {
+  display: block;
+  margin: 0.6rem auto 0;
+}
+
+/* Responsivo */
+@media (max-width: 700px) {
+  .sessao-header { flex-direction: column; gap: 0.3rem; }
+  .sessao-header strong { font-size: 1.1rem; }
+  .no { font-size: 0.7rem; padding: 0.25rem 0.6rem; }
+  .seta { font-size: 0.85rem; }
+  .fila-encadeada { gap: 0.2rem; padding: 0.8rem 0.4rem 0.6rem; }
+}
+/* ============================================================
+   PAINEL DE ATRAÇÕES — 1 card por linha, altura natural
+   ============================================================ */
+
+/* Container: 1 coluna, largura controlada */
+.card.larga {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* Cada atração vira um card */
+.card.larga .atr {
+  margin: 1rem 0;
+}
+
+/* O bloco de cada sessão não estica — altura natural */
+.card.larga .atr > .sessao-bloco {
+  /* sem flex, sem min-height */
+}
+
+/* A corrente também tem altura natural */
+.card.larga .atr > .sessao-bloco > .fila-encadeada {
+  /* sem flex */
+}
+
+/* Botão EMBARCAR com margem normal */
+.card.larga .atr > .sessao-bloco > form {
+  margin-top: 0.6rem;
+}

@@ -11,36 +11,59 @@
       <p>Possui fila VIP: <%= a.vip ? 'sim' : 'não' %></p>
       <p>Horários do dia:</p>
 
-      <div class="horas">
-        <% a.sessoes.forEach(s => { %>
-          <div class="sessao-box">
+      <% a.sessoes.forEach(s => { %>
+        <div class="sessao-bloco">
+          <div class="sessao-header">
             <strong><%= s.horario.replace(':', 'h') %></strong>
-            <small><%= s.tamanho %> pessoa(s) na fila</small>
-
-            <% if (s.estrutura.tamanho > 0) { %>
-              <div class="proximos">
-                <span class="rotulo-mini">próximos:</span>
-                <% s.estrutura.nos.slice(0, 5).forEach((no, i) => { %>
-                  <span class="nome-fila">
-                    <%= i + 1 %>º <%= no.nome %><% if (no.vip) { %> <span class="estrela">★</span><% } %>
-                  </span>
-                <% }) %>
-                <% if (s.estrutura.tamanho > 5) { %>
-                  <span class="mais">+<%= s.estrutura.tamanho - 5 %></span>
-                <% } %>
-              </div>
-            <% } else { %>
-              <p class="fila-vazia-mini">Fila vazia</p>
-            <% } %>
-
-            <form method="post" action="/atracoes/<%= a.id %>/embarcar">
-              <button class="pill" <%= s.tamanho === 0 ? 'disabled' : '' %>>EMBARCAR</button>
-            </form>
+            <span><%= s.tamanho %> pessoa(s) na fila</span>
           </div>
-        <% }) %>
-      </div>
+
+          <% if (s.estrutura.tamanho === 0) { %>
+            <p class="fila-vazia-mini">Fila vazia.</p>
+          <% } else { %>
+            <div class="fila-encadeada">
+              <div class="rotulo rotulo-inicio">inicio</div>
+
+              <% s.estrutura.nos.forEach((no, i) => { %>
+                <div class="no <%= no.vip ? 'vip' : '' %>">
+                  <%= no.nome %><% if (no.vip) { %> <span class="estrela">★</span><% } %>
+                </div>
+                <div class="seta">→</div>
+              <% }) %>
+              <div class="no null">null</div>
+
+              <div class="rotulo rotulo-fim">fim</div>
+            </div>
+
+            <% if (s.estrutura.ultimoVip) { %>
+              <p class="ultimo-vip">
+                último VIP: <strong><%= s.estrutura.ultimoVip %></strong>
+              </p>
+            <% } %>
+          <% } %>
+
+          <form method="post" action="/atracoes/<%= a.id %>/embarcar">
+            <button class="pill" <%= s.tamanho === 0 ? 'disabled' : '' %>>EMBARCAR</button>
+          </form>
+        </div>
+      <% }) %>
     </article>
   <% }) %>
 </div>
+
+<script>
+  // Animação: ao clicar em EMBARCAR, o primeiro nó "sai" antes do form enviar
+  document.querySelectorAll('form[action^="/atracoes/"][action$="/embarcar"]').forEach(form => {
+    form.addEventListener('submit', (e) => {
+      const corrente = form.closest('.sessao-bloco').querySelector('.fila-encadeada');
+      if (!corrente) return;
+      const primeiro = corrente.querySelector('.no:not(.null)');
+      if (!primeiro) return;
+      e.preventDefault();
+      primeiro.classList.add('saindo');
+      setTimeout(() => form.submit(), 400);
+    });
+  });
+</script>
 
 <%- include('../partials/foot') %>
