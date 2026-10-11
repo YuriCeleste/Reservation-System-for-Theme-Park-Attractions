@@ -29,29 +29,30 @@
  *
  *   cadastrarVisitante(dados) → Visitante | lança Error
  *     Erros: 'CPF ou e-mail já cadastrado.'
- *            (validações da classe Visitante)
  *
  *   cadastrarAtracao(dados)   → Atracao | lança Error
- *     Erros: (validações da classe Atracao)
  *
  * ------------------------------------------------------------
  * CONTRATO DOS MÉTODOS QUE DEVOLVEM STRING DE ERRO
  * ------------------------------------------------------------
  *
  *   entrarNaFila(visitanteId, atracaoId, horario) → string | null
- *     'Visitante ou atração não encontrados.'
- *     'Horário inválido para esta atração.'
- *     'Idade mínima para esta atração: N anos.'
- *     'Esse horário já passou.'
- *     'Você já está nessa fila.'
- *
  *   trocarHorario(...) → string | null
- *     'Visitante ou atração não encontrados.'
- *     'Você não está na fila do horário atual.'
- *     'Horário inválido.'
- *     'Você já está nessa fila.'
- *     'Idade mínima para esta atração: N anos.'
- *     'Esse horário já passou.'
+ *
+ * ------------------------------------------------------------
+ * SOBRE A stats()
+ * ------------------------------------------------------------
+ *
+ * A stats() usa o `ordenar()` da ListaDuplamenteEncadeada (issue
+ * #1) para montar o ranking de atrações e visitantes do dia.
+ *
+ * O fluxo é:
+ *   1. Filtra as reservas do dia percorrendo o histórico
+ *   2. Conta manualmente (comuns, VIP, por atração, por visitante)
+ *   3. Monta duas listas encadeadas (ranking de atrações e ranking
+ *      de visitantes) com os contadores
+ *   4. Chama `ordenar()` em cada ranking (decrescente por n)
+ *   5. Pega o topo (inicio) de cada ranking
  */
 class Parque {
   // Listas encadeadas (substituem o SQLite)
@@ -87,13 +88,12 @@ class Parque {
 
   /**
    * Cadastra um visitante.
-   * @returns {Visitante} o visitante cadastrado
+   * @returns {Visitante}
    * @throws {Error} 'CPF ou e-mail já cadastrado.' ou validação da classe
    */
   cadastrarVisitante(dados) {
     const Visitante = require('./Visitante');
 
-    // Verifica duplicidade ANTES de criar (mensagem unificada)
     if (this.#visitantes.buscarPorCpf(dados.cpf) || this.#visitantes.buscarPorEmail(dados.email)) {
       throw new Error('CPF ou e-mail já cadastrado.');
     }
@@ -114,7 +114,7 @@ class Parque {
 
   /**
    * Cadastra uma atração.
-   * @returns {Atracao} a atração cadastrada
+   * @returns {Atracao}
    * @throws {Error} validação da classe Atracao
    */
   cadastrarAtracao(dados) {
@@ -159,7 +159,7 @@ class Parque {
 
   /**
    * Coloca o visitante na fila de uma atração + horário.
-   * @returns {string|null} mensagem de erro, ou null se deu certo
+   * @returns {string|null}
    */
   entrarNaFila(visitanteId, atracaoId, horario) {
     const Reserva = require('./Reserva');
@@ -228,8 +228,8 @@ class Parque {
   }
 
   /**
-   * Move o visitante de uma fila para outra (mesma atração, horário diferente).
-   * @returns {string|null} mensagem de erro, ou null se deu certo
+   * Move o visitante de uma fila para outra.
+   * @returns {string|null}
    */
   trocarHorario(visitanteId, atracaoId, horarioAtual, novoHorario) {
     const v = this.buscarVisitante(visitanteId);
@@ -271,16 +271,29 @@ class Parque {
 
   /**
    * Estatísticas do dia, percorrendo o histórico (sem SQL).
+   *
+   * Usa o `ordenar()` da ListaDuplamenteEncadeada (issue #1) para
+   * montar os rankings. Fluxo:
+   *
+   *   1. Filtra as reservas do dia (percorrendo #historico)
+   *   2. Conta manualmente: total, VIP, por atração, por visitante
+   *   3. Monta uma lista encadeada para cada ranking
+   *   4. Chama `ordenar()` (decrescente por n)
+   *   5. Pega o topo (inicio) de cada ranking
+   *
    * @returns {{total, vip, comuns, topA, topV}}
    */
   stats() {
+    const ListaDuplamenteEncadeada = require('./ListaDuplamenteEncadeada');
     const hoje = this.#relogio.hoje();
 
+    // 1. Filtra as reservas do dia
     const doDia = [];
     for (const r of this.#historico) {
       if (r.entrouEm.slice(0, 10) === hoje) doDia.push(r);
     }
 
+    // 2. Contadores manuais
     let total = 0, vip = 0;
     const contAtracao = new Map();
     const contVisitante = new Map();
@@ -292,19 +305,32 @@ class Parque {
       contVisitante.set(r.visitante.id, (contVisitante.get(r.visitante.id) || 0) + 1);
     }
 
-    const topA = this.#top(contAtracao, id => this.buscarAtracao(id)?.nome);
-    const topV = this.#top(contVisitante, id => this.buscarVisitante(id)?.nome);
-
-    return { total, vip, comuns: total - vip, topA, topV };
-  }
-
-  /** Auxiliar: dada uma contagem { id: n }, devolve { nome, n } do maior. */
-  #top(contagem, nomeDe) {
-    let melhorId = null, melhorN = 0;
-    for (const [id, n] of contagem) {
-      if (n > melhorN) { melhorId = id; melhorN = n; }
+    // 3. Monta os rankings em listas encadeadas
+    const rankingAtracao = new ListaDuplamenteEncadeada();
+    for (const [id, n] of contAtracao) {
+      rankingAtracao.inserirNoFim({ id, n, nome: this.buscarAtracao(id)?.nome });
     }
-    return melhorId === null ? null : { nome: nomeDe(melhorId), n: melhorN };
+
+    const rankingVisitante = new ListaDuplamenteEncadeada();
+    for (const [id, n] of contVisitante) {
+      rankingVisitante.inserirNoFim({ id, n, nome: this.buscarVisitante(id)?.nome });
+    }
+
+    // 4. Ordena decrescente (maior n primeiro) — usa o `ordenar` da lista
+    rankingAtracao.ordenar((a, b) => b.n - a.n);
+    rankingVisitante.ordenar((a, b) => b.n - a.n);
+
+    // 5. Pega o topo dos rankings
+    const topA = rankingAtracao.inicio ? rankingAtracao.inicio.dado : null;
+    const topV = rankingVisitante.inicio ? rankingVisitante.inicio.dado : null;
+
+    return {
+      total,
+      vip,
+      comuns: total - vip,
+      topA: topA ? { nome: topA.nome, n: topA.n } : null,
+      topV: topV ? { nome: topV.nome, n: topV.n } : null
+    };
   }
 }
 
