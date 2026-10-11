@@ -40,8 +40,13 @@ class Reserva {
       INSERT INTO reservas (visitante_id, atracao_id, horario, vip, entrou_em, embarcou_em, status)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `).run(
-      this.#visitante.id, this.#atracao.id, this.#horario,
-      this.#vip ? 1 : 0, this.#entrouEm, this.#embarcouEm, this.#status
+      this.#visitante.id,
+      this.#atracao.id,
+      this.#horario,
+      this.#vip ? 1 : 0,
+      this.#entrouEm,
+      this.#embarcouEm,
+      this.#status
     );
     this.id = r.lastInsertRowid;
     return this.id;
@@ -80,13 +85,16 @@ class Reserva {
     return r;
   }
 
-  get visitante()  { return this.#visitante; }
-  get atracao()    { return this.#atracao; }
-  get horario()    { return this.#horario; }
-  get entrouEm()   { return this.#entrouEm; }
-  get embarcouEm() { return this.#embarcouEm; }
-  get status()     { return this.#status; }
-  get vip()        { return this.#vip; }
+  get visitante()   { return this.#visitante; }
+  get atracao()     { return this.#atracao; }
+  get horario()     { return this.#horario; }
+  get entrouEm()    { return this.#entrouEm; }
+  get embarcouEm()  { return this.#embarcouEm; }
+  get status()      { return this.#status; }
+  get vip()         { return this.#vip; }
+
+  // Alias para a FilaVirtual (que espera 'prioritaria')
+  get prioritaria() { return this.#vip; }
 }
 
 module.exports = Reserva;
