@@ -1,33 +1,89 @@
-// Popula o parque com dados de exemplo: node seed.js  (apaga os dados atuais)
-const db = require('./db');
-const { agora } = require('./filas');
+/**
+ * ============================================================
+ *  SEED — Dados de exemplo
+ * ============================================================
+ *
+ * Popula o Parque com atrações, visitantes e reservas de exemplo.
+ * Como o Parque é um singleton EM MEMÓRIA, o seed precisa rodar
+ * no MESMO processo que o server.
+ *
+ * Uso:
+ *   node seed.js              → executa o seed (sozinho, não afeta o server)
+ *   npm run demo              → sobe o server + seed no mesmo processo
+ *
+ * O server.js chama este arquivo automaticamente quando em modo demo.
+ * ============================================================
+ */
+const parque = require('./models/Parque');
 
-db.exec('DELETE FROM reservas; DELETE FROM visitantes; DELETE FROM atracoes; DELETE FROM sqlite_sequence;');
+// ==========================================================
+//  ATRAÇÕES
+// ==========================================================
+const ATRAÇÕES = [
+  ['Trem do Terror',          'trem fantasma',    4, 12, '09:00,14:00,18:00', true],
+  ['Cada Mal Assombrada',     'casa assombrada',  5, 14, '09:00,14:00,18:00', false],
+  ['Montanha-Russa Maldita',  'montanha-russa',   6, 16, '10:00,15:00,20:00', true],
+  ['Labirinto dos Sussurros', 'labirinto',        8, 10, '11:00,16:00,21:00', false]
+];
 
-const atr = db.prepare('INSERT INTO atracoes (nome, tipo, capacidade, idade_minima, horarios, vip) VALUES (?,?,?,?,?,?)');
-[['Trem do Terror', 'trem fantasma', 4, 12, '09:00,14:00,18:00', 1],
- ['Cada Mal Assombrada', 'casa assombrada', 5, 14, '09:00,14:00,18:00', 0],
- ['Montanha-Russa Maldita', 'montanha-russa', 6, 16, '10:00,15:00,20:00', 1],
- ['Labirinto dos Sussurros', 'labirinto', 8, 10, '11:00,16:00,21:00', 0]].forEach(a => atr.run(...a));
+for (const [nome, tipo, capacidade, idadeMinima, horarios, filaVip] of ATRAÇÕES) {
+  parque.cadastrarAtracao({ nome, tipo, capacidade, idadeMinima, horarios, filaVip });
+}
 
-const vis = db.prepare(`INSERT INTO visitantes (nome, cpf, email, nascimento, ingresso, cartao_bandeira, cartao_final)
-  VALUES (?,?,?,?,?,?,?)`);
-[['Ana Souza', '2000-03-14', 'vip'], ['Bruno Lima', '1998-07-02', 'normal'], ['Carla Menezes', '1995-11-23', 'vip'],
- ['Diego Alves', '2001-01-30', 'normal'], ['Elisa Rocha', '1999-09-09', 'normal'], ['Felipe Costa', '2003-05-18', 'vip'],
- ['Gabi Torres', '2007-12-01', 'normal'], ['Hugo Pereira', '1990-04-27', 'normal'], ['Iris Duarte', '2016-06-15', 'normal']]
-  .forEach(([n, nasc, ing], i) => vis.run(n, String(11122233300 + i), n.split(' ')[0].toLowerCase() + '@email.com', nasc, ing,
-    ing === 'vip' ? 'Visa' : null, ing === 'vip' ? '4242' : null));
+// ==========================================================
+//  VISITANTES
+// ==========================================================
+const VISITANTES = [
+  ['Ana Souza',     '2000-03-14', 'vip'],
+  ['Bruno Lima',    '1998-07-02', 'normal'],
+  ['Carla Menezes', '1995-11-23', 'vip'],
+  ['Diego Alves',   '2001-01-30', 'normal'],
+  ['Elisa Rocha',   '1999-09-09', 'normal'],
+  ['Felipe Costa',  '2003-05-18', 'vip'],
+  ['Gabi Torres',   '2007-12-01', 'normal'],
+  ['Hugo Pereira',  '1990-04-27', 'normal'],
+  ['Iris Duarte',   '2016-06-15', 'normal']
+];
 
-// Algumas reservas: as 2 primeiras de cada visitante já embarcaram (histórico), as demais aguardam.
-const res = db.prepare(`INSERT INTO reservas (visitante_id, atracao_id, horario, vip, status, entrou_em, embarcou_em)
-  VALUES (?,?,?,?,?,?,?)`);
-const vipDe = id => db.prepare('SELECT ingresso FROM visitantes WHERE id = ?').get(id).ingresso === 'vip';
-const horas = { 1: '18:00', 2: '18:00', 3: '20:00', 4: '21:00' };
-for (let v = 1; v <= 9; v++) {
-  [1, 2, 3, 4].filter(a => (v + a) % 3 !== 0).forEach((a, k) => {
-    const feito = k < 1 && v % 2 === 0;
-    const vip = [1, 3].includes(a) && vipDe(v) ? 1 : 0;
-    res.run(v, a, horas[a], vip, feito ? 'concluida' : 'aguardando', agora(), feito ? agora() : null);
+VISITANTES.forEach(([nome, nascimento, ingresso], i) => {
+  const cpf = String(11122233300 + i);
+  const email = nome.split(' ')[0].toLowerCase() + '@email.com';
+  const cartaoNumero = ingresso === 'vip' ? '4242424242424242' : null;
+  parque.cadastrarVisitante({ nome, cpf, email, nascimento, ingresso, cartaoNumero });
+});
+
+// ==========================================================
+//  RESERVAS (histórico + filas)
+// ==========================================================
+const HORAS = { 1: '18:00', 2: '18:00', 3: '20:00', 4: '21:00' };
+
+for (let vid = 1; vid <= 9; vid++) {
+  const visitante = parque.buscarVisitante(vid);
+  if (!visitante) continue;
+
+  const atracoesDoVisitante = [1, 2, 3, 4].filter(a => (vid + a) % 3 !== 0);
+
+  atracoesDoVisitante.forEach((aid, k) => {
+    const atracao = parque.buscarAtracao(aid);
+    if (!atracao) return;
+
+    const horario = HORAS[aid];
+    const feito = k < 1 && vid % 2 === 0;
+
+    const erro = parque.entrarNaFila(vid, aid, horario);
+    if (erro) {
+      if (!erro.includes('Idade mínima') && !erro.includes('já está')) {
+        console.warn(`Aviso: ${visitante.nome} não entrou em ${atracao.nome}: ${erro}`);
+      }
+      return;
+    }
+
+    if (feito) {
+      const sessao = atracao.buscarSessao(horario);
+      const reserva = sessao.fila.sairDaFila(visitante);
+      if (reserva) reserva.concluir(parque.relogio.agora());
+    }
   });
 }
-console.log('Dados de exemplo criados.');
+
+console.log('Dados de exemplo criados no Parque.');

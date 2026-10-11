@@ -1,9 +1,11 @@
 const path = require('path');
 const express = require('express');
-const db = require('./db');
-const f = require('./filas');
-const Visitante = require('./models/Visitante');
-const Atracao = require('./models/Atracao');
+const parque = require('./models/Parque');
+
+// Roda o seed automaticamente quando em modo demo (npm run demo)
+if (process.argv.includes('--sem-hora')) {
+  require('./seed');
+}
 
 const app = express();
 app.set('view engine', 'ejs');
@@ -19,7 +21,7 @@ const cookies = req => Object.fromEntries((req.headers.cookie || '').split('; ')
 
 // ---------- Início, métricas e créditos ----------
 app.get('/', (req, res) => res.render('index', { aba: '' }));
-app.get('/metricas', (req, res) => res.render('metricas', { aba: 'metricas', s: f.stats() }));
+app.get('/metricas', (req, res) => res.render('metricas', { aba: 'metricas', s: parque.stats() }));
 app.get('/creditos', (req, res) => res.render('creditos', { aba: 'creditos' }));
 
 // ---------- Visitantes ----------
@@ -29,36 +31,81 @@ app.get('/visitantes', (req, res) =>
 app.post('/visitantes', (req, res) => {
   const d = req.body;
   try {
-    const v = new Visitante({
+    const v = parque.cadastrarVisitante({
       nome: d.nome,
       cpf: d.cpf,
       email: d.email,
       nascimento: d.nascimento,
       ingresso: d.ingresso || 'normal',
-      cartao: { numero: d.cartao_numero }
+      cartaoNumero: d.cartao_numero
     });
-    v.salvar();
     res.cookie('visitante', v.id);
     return res.redirect('/visitantes/painel?ok=1');
   } catch (e) {
-    const erro = e.message.includes('UNIQUE') ? 'CPF ou e-mail já cadastrado.' : e.message;
-    res.render('visitantes/cadastro', { aba: 'visitantes', sub: 'cadastro', erro, d });
+    res.render('visitantes/cadastro', { aba: 'visitantes', sub: 'cadastro', erro: e.message, d });
   }
 });
 
 app.get('/visitantes/painel', (req, res) => {
   if (req.query.visitante !== undefined) res.cookie('visitante', req.query.visitante);
   const id = req.query.visitante ?? cookies(req).visitante;
-  const v = id ? Visitante.buscar(id) : null;
+  const v = id ? parque.buscarVisitante(+id) : null;
+
+  let painel = { atracoes: [], minhas: [], historico: [] };
+  if (v) {
+    const atracoes = parque.listarAtracoes().map(a => {
+      const horas = [];
+      for (const s of a.sessoes) {
+        horas.push({
+          h: s.horario,
+          n: s.fila.tamanho,
+          ja: s.fila.posicaoDe(v) !== null,
+          passou: !parque.relogio.horarioAberto(s.horario)
+        });
+      }
+      return {
+        id: a.id,
+        nome: a.nome,
+        tipo: a.tipo,
+        capacidade: a.capacidade,
+        idade_minima: a.idadeMinima,
+        vip: a.filaVip ? 1 : 0,
+        menor: v.idade(parque.relogio.hoje()) < a.idadeMinima,
+        horas
+      };
+    });
+
+    const historico = parque.historico.porVisitante(v.id).map(r => ({
+      id: r.id,
+      atracao: r.atracao.nome,
+      horario: r.horario,
+      status: r.status,
+      entrou_em: r.entrouEm,
+      embarcou_em: r.embarcouEm
+    }));
+
+    const minhas = [];
+    for (const a of parque.listarAtracoes()) {
+      for (const s of a.sessoes) {
+        const pos = s.fila.posicaoDe(v);
+        if (pos !== null) {
+          minhas.push({ atracao: a.nome, horario: s.horario, posicao: pos });
+        }
+      }
+    }
+
+    painel = { atracoes, minhas, historico };
+  }
+
   res.render('visitantes/painel', {
     aba: 'visitantes', sub: 'painel', ok: req.query.ok, erro: req.query.erro, v,
-    visitantes: Visitante.listar().map(x => ({ id: x.id, nome: x.nome })),
-    atracoes: [], minhas: [], historico: [], ...(v ? f.painelVisitante(v) : {})
+    visitantes: parque.listarVisitantes().map(x => ({ id: x.id, nome: x.nome })),
+    ...painel
   });
 });
 
 app.post('/visitantes/fila', (req, res) => {
-  const erro = f.entrar(cookies(req).visitante, +req.body.atracao_id, req.body.horario);
+  const erro = parque.entrarNaFila(+cookies(req).visitante, +req.body.atracao_id, req.body.horario);
   res.redirect('/visitantes/painel?' + (erro ? 'erro=' + encodeURIComponent(erro) : 'ok=fila'));
 });
 
@@ -71,7 +118,7 @@ app.get('/atracoes', (req, res) =>
 app.post('/atracoes', (req, res) => {
   const d = req.body;
   try {
-    const a = new Atracao({
+    parque.cadastrarAtracao({
       nome: d.nome,
       tipo: d.tipo,
       capacidade: d.capacidade,
@@ -79,7 +126,6 @@ app.post('/atracoes', (req, res) => {
       horarios: d.horarios,
       filaVip: d.vip === 'sim'
     });
-    a.salvar();
     res.redirect('/atracoes/painel?msg=' + encodeURIComponent('Atração cadastrada.'));
   } catch (e) {
     res.render('atracoes/cadastro', { aba: 'atracoes', sub: 'cadastro', erro: e.message, d, TIPOS });
@@ -87,27 +133,33 @@ app.post('/atracoes', (req, res) => {
 });
 
 app.get('/atracoes/painel', (req, res) => {
-  const linhas = Atracao.listar().map(a => {
-    const h = f.sessao(a.id);
-    const sessao = h ? a.sessao(h) : null;
+  const linhas = parque.listarAtracoes().map(a => {
+    const sessoes = [...a.sessoes].map(s => ({
+      horario: s.horario,
+      tamanho: s.fila.tamanho
+    }));
+    const primeira = sessoes.find(s => s.tamanho > 0) || sessoes[0];
+
     return {
       id: a.id,
       nome: a.nome,
       tipo: a.tipo,
       capacidade: a.capacidade,
       idade_minima: a.idadeMinima,
-      horarios: a.horarios().join(','),
+      horarios: sessoes.map(s => s.horario).join(','),
       vip: a.filaVip ? 1 : 0,
-      sessao: h,
-      total: sessao ? sessao.tamanho : 0,
-      proximos: sessao ? sessao.proximos(a.capacidade).paraArray() : []
+      sessao: primeira ? primeira.horario : null,
+      total: primeira ? primeira.tamanho : 0,
+      proximos: primeira
+        ? [...a.buscarSessao(primeira.horario).fila.proximos(a.capacidade)]
+        : []
     };
   });
   res.render('atracoes/painel', { aba: 'atracoes', sub: 'painel', linhas, msg: req.query.msg });
 });
 
 app.post('/atracoes/:id/embarcar', (req, res) => {
-  const r = f.embarcar(+req.params.id);
+  const r = parque.embarcar(+req.params.id);
   const msg = r ? `Sessão das ${r.horario}: ${r.total} visitante(s) embarcaram.` : 'Ninguém na fila.';
   res.redirect('/atracoes/painel?msg=' + encodeURIComponent(msg));
 });
