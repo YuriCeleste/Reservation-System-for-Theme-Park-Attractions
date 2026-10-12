@@ -14,7 +14,8 @@ class Visitante {
   constructor({ id, nome, cpf, email, nascimento, ingresso, cartao, hoje = Visitante.#hojeLocal() }) {
     if (id === undefined || id === null) throw new Error('Id é obrigatório (gerado pelo Parque).');
     if (!nome || !nome.trim()) throw new Error('Nome é obrigatório.');
-    if (!email || !email.includes('@')) throw new Error('E-mail inválido.');
+    const emailNormalizado = (email || '').trim().toLowerCase();
+    if (!emailNormalizado || !emailNormalizado.includes('@')) throw new Error('E-mail inválido.');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(nascimento)) throw new Error('Data de nascimento inválida.');
     if (nascimento > hoje) throw new Error('A data de nascimento não pode ser no futuro.');
 
@@ -40,7 +41,7 @@ class Visitante {
     this.#id = id;
     this.#nome = nome.trim();
     this.#cpf = cpfLimpo;
-    this.#email = email.trim();
+    this.#email = emailNormalizado;
     this.#nascimento = nascimento;
     this.#ingresso = tipoIngresso;
   }

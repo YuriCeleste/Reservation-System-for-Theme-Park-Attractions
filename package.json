@@ -5,7 +5,9 @@
   "scripts": {
     "start": "node server.js",
     "demo": "node server.js --sem-hora",
-    "seed": "node dados-exemplo.js"
+    "seed": "node dados-exemplo.js --sem-hora",
+    "seed:limpo": "node dados-exemplo.js --sem-hora --limpar",
+    "test": "node --test"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",

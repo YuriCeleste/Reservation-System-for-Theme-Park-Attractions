@@ -2,56 +2,46 @@
 
 Sistema de reservas e filas virtuais para as atrações de um parque temático de terror. Visitantes se cadastram, escolhem uma atração e um horário e entram em uma fila virtual específica. Quem tem ingresso **VIP** passa na frente dos ingressos normais nas atrações que possuem fila prioritária. A equipe do parque acompanha as filas, chama as sessões e consulta as métricas do dia.
 
-O projeto foi feito em dupla, com Node.js e uma stack leve, pensada para instalar e rodar em segundos. **Sem banco de dados:** toda a persistência é feita em **listas encadeadas em memória**, dentro da classe `Parque`.
+Projeto de **Algoritmos e Estruturas de Dados** (IFPE Campus Igarassu), feito em dupla. O núcleo da aplicação são **listas encadeadas implementadas do zero**; o SQLite cuida apenas da persistência.
 
 ## Sumário
 
+- [Arquitetura](#arquitetura)
 - [Funcionalidades](#funcionalidades)
 - [Tecnologias](#tecnologias)
 - [Como executar](#como-executar)
-- [Telas e rotas](#telas-e-rotas)
+- [Persistência e o "SGBD rodando"](#persistência-e-o-sgbd-rodando)
+- [Listas encadeadas](#listas-encadeadas)
 - [Regras de negócio](#regras-de-negócio)
-- [Fila encadeada com prioridade](#fila-encadeada-com-prioridade)
-- [Modelo de dados](#modelo-de-dados)
+- [Telas e rotas](#telas-e-rotas)
 - [Estrutura de pastas](#estrutura-de-pastas)
-- [Diagrama de classes](#diagrama-de-classes)
+- [Modelo de dados](#modelo-de-dados)
+- [Testes](#testes)
 - [Decisões de projeto](#decisões-de-projeto)
 - [Limitações conhecidas](#limitações-conhecidas)
 - [Equipe](#equipe)
 
+## Arquitetura
+
+```
+Telas (EJS) ─► server.js (rotas) ─► Parque ─► listas encadeadas   ← núcleo: guardam e operam os dados
+                                       │
+                                       └──► Repositorio ─► SQLite ← persistência
+```
+
+- Os dados principais (atrações, visitantes, histórico, sessões e filas) vivem em **listas duplamente encadeadas** em memória. Buscas, inserções, remoções, movimentações e ordenações são feitas por nós e ponteiros, sem `Array`, `Map` ou `Set` guardando os dados.
+- O **`Parque`** concentra as regras de negócio e recebe um `Repositorio` por injeção, como o `Relogio`. Depois de cada mudança, ele avisa o repositório.
+- Ao iniciar, o `Parque` **reconstrói as listas e as filas** a partir do banco (`carregar()`).
+- Arrays só aparecem na fronteira: ao entregar dados às telas e ao ler as linhas do banco.
+
 ## Funcionalidades
 
-**Cadastro de atrações**
-- Nome, tipo, capacidade máxima por sessão, idade mínima e horários disponíveis.
-- Define se a atração possui fila prioritária (fila VIP).
-
-**Cadastro de visitantes**
-- Nome, e-mail, CPF, data de nascimento e tipo de ingresso (Normal ou VIP).
-- O ingresso VIP só é liberado depois de adicionar um cartão de crédito.
-- Mensagem de confirmação e redirecionamento ao painel do visitante depois do cadastro.
-
-**Painel do visitante**
-- Escolha do visitante em um seletor (não há login).
-- Posição atual em cada fila em que está aguardando.
-- Lista de atrações com os horários do dia e quantas pessoas já estão em cada fila.
-- Botão **entrar na fila** por horário.
-- Botão **SAIR** para sair de uma fila em que está aguardando.
-- Botão **TROCAR** para mover o visitante de um horário para outro da mesma atração.
-- Histórico com a data/hora de entrada na fila e a de embarque.
-
-**Painel de controle do parque**
-- Quantidade de pessoas na fila de cada atração.
-- Fila desenhada como **lista encadeada visual**: `inicio → [Ana ★] → [Carla] → null → fim`.
-- Próximos a embarcar, com a posição e destaque para VIPs.
-- Botão **EMBARCAR**, que chama a sessão e faz a fila andar.
-
-**Métricas do dia**
-- Total de reservas, separado entre comuns e VIP (gráfico de pizza).
-- **Ranking top 3** das atrações mais disputadas.
-- **Ranking top 3** dos visitantes que mais usaram o sistema.
-
-**Créditos**
-- Tela com a equipe e as tecnologias usadas.
+- **Cadastro de atrações:** nome, tipo, capacidade por sessão, idade mínima, horários e fila VIP.
+- **Cadastro de visitantes:** dados pessoais e ingresso Normal ou VIP (o VIP exige um cartão de crédito).
+- **Painel do visitante:** posição em cada fila, atrações com horários e tamanho das filas, entrada na fila e histórico com data/hora de entrada e embarque.
+- **Painel do parque:** pessoas na fila por atração, próximos a embarcar com a posição e o botão **EMBARCAR**.
+- **Métricas do dia:** reservas (comuns x VIP), atração mais disputada e visitante do dia.
+- **Créditos** da equipe.
 
 ## Tecnologias
 
@@ -59,41 +49,111 @@ O projeto foi feito em dupla, com Node.js e uma stack leve, pensada para instala
 | --- | --- |
 | Servidor | Node.js + Express 4 |
 | Páginas | EJS (renderização no servidor, sem build) |
-| Armazenamento | **Listas encadeadas em memória** (sem banco de dados) |
-| Estilo | CSS puro, fontes Cinzel, Cinzel Decorative, Nosifer, Hedvig Letters Serif e IBM Plex Sans (Google Fonts) |
-| Estrutura de dados | Lista duplamente encadeada + fila virtual com prioridade |
-
-Não há framework de front-end, etapa de compilação, nem banco de dados. Toda a persistência é feita em **listas encadeadas em memória**, dentro do objeto `Parque` (singleton). Edite um arquivo, salve e recarregue a página.
+| Persistência | SQLite via `better-sqlite3` |
+| Estilo | CSS puro (fontes Cinzel e IBM Plex Sans, via Google Fonts) |
+| Dados em memória | Lista duplamente encadeada própria |
+| Testes | `node --test` (nativo do Node, sem dependências) |
 
 ## Como executar
 
-**Pré-requisitos:** Node.js 22 ou superior e npm. As fontes são carregadas do Google Fonts, então o visual completo precisa de internet.
+**Pré-requisitos:** Node.js 22 ou superior (testado nas versões 22 e 24) e npm. As fontes vêm do Google Fonts, então o visual completo precisa de internet.
 
 ```bash
-# 1. Instalar as dependências
 npm install
-
-# 2. Subir o servidor com dados de exemplo
-npm run demo
+npm run seed      # dados de exemplo (opcional)
+npm start         # http://localhost:3000
 ```
-
-Acesse **http://localhost:3000**.
-
-### Scripts
 
 | Comando | O que faz |
 | --- | --- |
-| `npm start` | Inicia o servidor na porta 3000 (parque vazio). |
-| `npm run demo` | Inicia o servidor **com dados de exemplo** e ignorando a hora real: todos os horários ficam abertos. Ideal para apresentar fora do horário das sessões. |
-| `npm run seed` | Popula o parque com dados de exemplo e sai (útil para inspecionar sem subir o servidor). |
+| `npm start` | Inicia o servidor. Carrega do banco o que estiver gravado. |
+| `npm run demo` | Inicia o servidor **ignorando a hora real**: todos os horários ficam abertos. Ideal para apresentar fora do horário das sessões. |
+| `npm run seed` | Cria atrações, visitantes e reservas de exemplo **se o banco estiver vazio**. |
+| `npm run seed:limpo` | Apaga o banco e cria os dados de exemplo de novo. |
+| `npm test` | Roda todos os testes. |
 
-### Dados de exemplo
+O banco é o arquivo `parque.db`, criado automaticamente. Para usar outro, defina `PARQUE_DB` (por exemplo, `PARQUE_DB=/tmp/teste.db npm start`). A variável `PORT` muda a porta.
 
-- **Atrações:** Trem do Terror, Cada Mal Assombrada, Montanha-Russa Maldita e Labirinto dos Sussurros.
-- **Visitantes:** 9 pessoas, incluindo VIPs e uma criança de 10 anos, para mostrar o botão desabilitado por idade mínima.
-- Algumas reservas já nascem aguardando e outras já concluídas, para o histórico não ficar vazio.
+**Dados de exemplo:** 4 atrações (Trem do Terror, Cada Mal Assombrada, Montanha-Russa Maldita e Labirinto dos Sussurros) e 9 visitantes, incluindo VIPs e uma criança de 10 anos, para mostrar o botão desabilitado por idade mínima. Parte das reservas já aparece como concluída, para o histórico não ficar vazio.
 
-> Como o armazenamento é em memória, os dados **existem apenas enquanto o servidor está rodando**. `npm run demo` repopula tudo a cada inicialização.
+## Persistência e o "SGBD rodando"
+
+A persistência é feita em **SQLite**, um banco **relacional** embutido. Ele roda **dentro do próprio processo da aplicação**: não há servidor de banco para instalar, configurar ou subir antes da apresentação. Enquanto o `npm start` está rodando, o banco está rodando.
+
+- **Reiniciar o servidor mantém tudo:** visitantes, atrações, filas (com a ordem e a prioridade VIP) e histórico.
+- **A troca de banco é isolada:** a interface `Repositorio` esconde o SQLite do resto do sistema. Trocar por MySQL exigiria só uma nova implementação (`RepositorioMysql`), sem mexer no `Parque`.
+- **O número do cartão nunca é gravado:** só a bandeira e os 4 últimos dígitos.
+
+## Listas encadeadas
+
+### `ListaDuplamenteEncadeada` (`models/`)
+
+Lista genérica, ligada nó a nó (`No` guarda o dado, o `proximo` e o `anterior`). Atributos privados `#inicio`, `#fim` e `#tamanho`.
+
+| Operação | Métodos |
+| --- | --- |
+| Inclusão | `inserirNoInicio`, `inserirNoFim`, `inserirApos(no, dado)` |
+| Remoção | `remover(no)` (qualquer nó, O(1)), `removerPrimeiro()` |
+| Busca | `buscar(predicado)`, `buscarTodos(predicado)`, `noEm(indice)` |
+| Alteração | `alterar(no, novoDado)` |
+| Movimentação | `mover(no, novaPosicao)` |
+| Ordenação | `ordenar(comparador)` (insertion sort estável, religando os próprios nós) |
+| Percurso | `percorrer(callback)` e `for...of` |
+
+### `FilaVirtual` (herda da lista)
+
+Fila de uma sessão, com prioridade. Guarda um ponteiro extra, `ultimoVip`:
+
+```
+inicio → [V1] → [V2] → [N1] → [N2] → [N3] ← fim
+                  ↑
+              ultimoVip
+```
+
+| Operação | Comportamento | Custo |
+| --- | --- | --- |
+| `enfileirar` (normal) | Entra no fim da fila. | O(1) |
+| `enfileirar` (VIP) | Entra logo depois do último VIP, ou no início se não há VIP. | O(1) |
+| `desenfileirar` | Atende o primeiro da fila. | O(1) |
+| `sairDaFila(visitante)` | Remove do meio; se era o último VIP, `ultimoVip` volta ao nó anterior. | O(n) para achar, O(1) para remover |
+| `posicaoDe`, `proximos(n)` | Posição na fila e as próximas reservas (em uma nova lista). | O(n) |
+
+A fila **protege a própria ordem**: inserção direta, `alterar`, `mover` e `ordenar` lançam erro, porque qualquer um deles poderia colocar um normal na frente de um VIP.
+
+### Onde cada operação aparece no sistema
+
+- **Inclusão:** cadastros e entrada na fila com prioridade.
+- **Remoção:** embarcar (do início) e sair da fila (do meio).
+- **Busca:** visitante e atração por id, CPF e e-mail únicos, posição na fila.
+- **Movimentação:** trocar de horário (o nó sai de uma fila e entra em outra).
+- **Ordenação:** atrações e visitantes em ordem alfabética.
+
+## Regras de negócio
+
+**Cadastro**
+- O CPF deve ter exatamente 11 dígitos. CPF e e-mail não podem se repetir (o e-mail ignora maiúsculas).
+- A data de nascimento não pode estar no futuro.
+- O ingresso VIP exige cartão de crédito, **simulado**: nada é cobrado nem validado em operadora.
+
+**Entrada na fila**
+- O botão fica desabilitado se o visitante não tem a idade mínima da atração.
+- Não dá para entrar duas vezes na mesma fila (mesma atração e horário) enquanto estiver aguardando. Depois de embarcar, pode entrar de novo.
+- Horários diferentes da mesma atração são permitidos.
+- Horários que já passaram ficam como "horário encerrado" (exceto no modo demo).
+- Em uma atração **sem fila VIP**, o visitante VIP entra como um visitante normal.
+
+**Embarque**
+- **EMBARCAR** chama, no máximo, a capacidade da sessão.
+- A sessão chamada é o próximo horário (a partir da hora atual) que tenha gente aguardando; se todos já passaram, o mais cedo que ainda tem fila.
+- Se a fila tem menos gente que a capacidade, todos embarcam.
+
+**Sair da fila e trocar de horário** (no `Parque`)
+- Sair da fila apaga a reserva (também do histórico).
+- Trocar de horário leva a pessoa para o fim da fila nova, e a data/hora de entrada passa a ser a da troca.
+
+**Métricas**
+- "Reservas do dia" conta as entradas na fila feitas hoje; quem desistiu não conta.
+- A divisão comum/VIP usa o tipo de ingresso do visitante.
 
 ## Telas e rotas
 
@@ -103,285 +163,77 @@ Acesse **http://localhost:3000**.
 | `/visitantes` | GET / POST | Cadastro de visitantes |
 | `/visitantes/painel` | GET | Painel do visitante (`?visitante=ID` seleciona a pessoa) |
 | `/visitantes/fila` | POST | Entrar na fila de uma atração em um horário |
-| `/visitantes/sair-fila` | POST | Sair da fila de uma atração em um horário |
-| `/visitantes/trocar-horario` | POST | Mover a reserva para outro horário da mesma atração |
 | `/atracoes` | GET / POST | Cadastro de atrações |
 | `/atracoes/painel` | GET | Painel de controle do parque |
 | `/atracoes/:id/embarcar` | POST | Chama a próxima sessão da atração |
 | `/metricas` | GET | Métricas e estatísticas do dia |
 | `/creditos` | GET | Créditos da equipe |
 
-## Regras de negócio
-
-**Cadastro**
-- O CPF deve ter exatamente 11 dígitos numéricos. CPF e e-mail não podem se repetir.
-- A data de nascimento não pode estar no futuro.
-- O ingresso VIP exige um cartão de crédito, que é **simulado**: nada é cobrado nem validado em operadora.
-- Apenas a **bandeira e os 4 últimos dígitos** do cartão são guardados.
-
-**Entrada na fila**
-- O botão fica desabilitado se o visitante não tem a idade mínima da atração.
-- Não é possível entrar duas vezes na mesma fila (mesma atração e horário) enquanto estiver aguardando. Depois de embarcar, pode entrar de novo.
-- É possível entrar em horários diferentes da mesma atração.
-- Horários que já passaram ficam como "horário encerrado" (a menos que o servidor rode com `npm run demo`).
-- Se a atração **não tem fila VIP**, o visitante VIP entra como um visitante normal.
-
-**Sair e trocar de horário**
-- O visitante pode sair de uma fila em que está aguardando a qualquer momento.
-- Pode trocar para outro horário da **mesma atração**, desde que o novo horário ainda esteja aberto e ele não esteja já nessa fila.
-- Ao trocar, a reserva antiga é removida e uma nova reserva é criada no novo horário, com a mesma prioridade (VIP se aplicável).
-
-**Embarque**
-- O botão **EMBARCAR** chama, no máximo, a capacidade da sessão.
-- A sessão chamada é o próximo horário (a partir da hora atual) que tenha gente aguardando. Se todos já passaram, usa o mais cedo que ainda tem fila.
-- Se a fila tem menos gente que a capacidade, todos embarcam.
-- Quem embarca sai da fila e a data/hora do embarque entra no histórico.
-
-**Métricas**
-- "Reservas do dia" conta as **entradas na fila** feitas hoje.
-- A divisão comum/VIP usa o **tipo de ingresso** do visitante.
-- O ranking é montado com o método `ordenar()` da lista encadeada (insertion sort estável).
-
-## Fila encadeada com prioridade
-
-Cada combinação **atração + horário** tem a sua própria fila, implementada como uma **lista duplamente encadeada com prioridade** em [`models/FilaVirtual.js`](models/FilaVirtual.js).
-
-```
-inicio → [Ana ★] ⇄ [Carla ★] ⇄ [Gabi] → null
-                 ↑
-             ultimoVip
-```
-
-A fila guarda três ponteiros: `inicio` (próximo a ser atendido), `fim` (último da fila) e `ultimoVip` (último nó VIP).
-
-| Operação | Comportamento | Custo |
-| --- | --- | --- |
-| `enfileirar` (normal) | Entra no fim da fila, ligando-se ao nó apontado por `fim`. | O(1) |
-| `enfileirar` (VIP) | Entra logo depois do último VIP, ou no início se não há VIP. Passa na frente de todos os normais. | O(1) |
-| `desenfileirar` | Remove e devolve o nó do início. Se era o último VIP, `ultimoVip` é atualizado. | O(1) |
-| `posicaoDe` | Posição do visitante na fila (1 = próximo). | O(n) |
-| `sairDaFila` | Remove o visitante do meio da fila, reajustando `ultimoVip` se necessário. | O(n) |
-| `proximos(n)` | Devolve uma nova lista com os próximos N, sem tirá-los da fila. | O(n) |
-
-**Onde a fila é usada**
-- Cada `Sessao` (atração + horário) tem a sua própria `FilaVirtual`.
-- O `Parque` expõe métodos que operam nessas filas: `entrarNaFila`, `embarcar`, `sairDaFila`, `trocarHorario`.
-- A interface do painel do parque desenha a fila como **corrente visual**, mostrando `inicio → [Ana ★] → [Carla] → null → fim`.
-
-## Modelo de dados
-
-Não há banco de dados. Todo o armazenamento é feito em **listas duplamente encadeadas** dentro do objeto `Parque` (singleton):
-
-| Lista | O que guarda |
-| --- | --- |
-| `ListaVisitantes` | Todos os visitantes cadastrados (busca por CPF e e-mail) |
-| `ListaAtracoes` | Todas as atrações (busca por nome) |
-| `ListaHistorico` | Todas as reservas (histórico completo) |
-
-Cada **Atracao** tem uma lista de **Sessões**. Cada **Sessão** tem a sua própria **FilaVirtual**.
-
-### Classes de domínio
-
-| Classe | Papel |
-| --- | --- |
-| `Parque` | **Singleton.** Guarda as listas, os contadores de IDs e o relógio. Todas as regras de negócio vivem aqui. |
-| `Visitante` | Nome, CPF, e-mail, nascimento, ingresso, cartão. Método `idade()`. |
-| `Atracao` | Nome, tipo, capacidade, idade mínima, fila VIP, lista de `Sessao`. |
-| `Sessao` | Horário + a sua própria `FilaVirtual`. |
-| `Reserva` | Visitante + atração + horário + prioridade + status + timestamps. |
-| `Ingresso` | **Fábrica.** Cria `IngressoNormal` ou `IngressoVip` (com polimorfismo em `prioridade()` e `preco()`). |
-| `FilaVirtual` | Fila com prioridade VIP (herda de `ListaDuplamenteEncadeada`). |
-| `ListaDuplamenteEncadeada` | Estrutura base: `inserirNoInicio`, `inserirNoFim`, `remover`, `buscar`, `ordenar`, `mover`. |
-| `No` | Nó da lista (dado + `proximo` + `anterior`). |
-| `Contador` | Gerador de IDs sequenciais (substitui o `AUTOINCREMENT` do SQLite). |
-| `Relogio` | Relógio injetável (modo demo). Nenhuma classe lê a hora direto. |
-
 ## Estrutura de pastas
 
 ```
 .
-├── server.js              # Express: rotas e validações dos formulários
-├── dados-exemplo.js       # Popula o Parque com dados fictícios (modo demo)
-├── package.json
-├── models/                # Classes de domínio (orientação a objetos)
-│   ├── Parque.js          # Singleton (cérebro do sistema)
-│   ├── Visitante.js       # Visitante do parque
-│   ├── Atracao.js         # Atração + lista de Sessões
-│   ├── Sessao.js          # Horário + FilaVirtual
-│   ├── Reserva.js         # Reserva (visitante + atração + horário)
-│   ├── Ingresso.js        # Fábrica (Normal / VIP)
+├── server.js              # Express: rotas; entrega às views os dados do Parque
+├── parque-instancia.js    # O Parque único: relógio + SQLite + carregar()
+├── config.js              # Caminho do banco (PARQUE_DB)
+├── dados-exemplo.js       # Seed: cadastra pelo Parque, gravando no banco
+├── models/
+│   ├── No.js
+│   ├── ListaDuplamenteEncadeada.js
 │   ├── FilaVirtual.js     # Fila com prioridade VIP
-│   ├── ListaDuplamenteEncadeada.js  # Estrutura base
-│   ├── ListaVisitantes.js # Lista especializada
-│   ├── ListaAtracoes.js   # Lista especializada
-│   ├── ListaHistorico.js  # Lista especializada
-│   ├── No.js              # Nó da lista
-│   ├── Contador.js        # Gerador de IDs
-│   └── Relogio.js         # Relógio injetável
-├── public/                # Arquivos estáticos
-│   ├── style.css
-│   └── *.png              # Imagens de fundo, logomarca, troféus e avatares
-├── test/                  # Testes das estruturas de dados
-└── views/                 # Páginas EJS
-    ├── index.ejs
-    ├── metricas.ejs
-    ├── creditos.ejs
-    ├── partials/          # head.ejs (menu) e foot.ejs
-    ├── atracoes/          # cadastro.ejs e painel.ejs
-    └── visitantes/        # cadastro.ejs e painel.ejs
+│   ├── Parque.js          # Regras de negócio e dados em listas
+│   ├── Atracao.js  Sessao.js  Visitante.js  Reserva.js  Ingresso.js
+│   └── Relogio.js         # Hora injetável (modo demo)
+├── persistencia/
+│   ├── Repositorio.js     # Contrato da persistência
+│   ├── SemPersistencia.js # Não grava nada (padrão e testes)
+│   └── RepositorioSqlite.js
+├── views/                 # Páginas EJS
+├── public/                # CSS e imagens
+└── test/                  # Testes (node --test)
 ```
 
-## Diagrama de classes
+## Modelo de dados
 
-```mermaid
-classDiagram
-    class Parque {
-        -ListaVisitantes visitantes
-        -ListaAtracoes atracoes
-        -ListaHistorico historico
-        -Contador contadorVisitante
-        -Contador contadorAtracao
-        -Contador contadorReserva
-        -Relogio relogio
-        +cadastrarVisitante(dados)
-        +cadastrarAtracao(dados)
-        +buscarVisitante(id)
-        +buscarAtracao(id)
-        +listarVisitantes()
-        +listarAtracoes()
-        +entrarNaFila(vId, aId, horario)
-        +embarcar(aId)
-        +sairDaFila(vId, aId, horario)
-        +trocarHorario(vId, aId, atual, novo)
-        +estruturaDaFila(aId, horario)
-        +stats()
-    }
-
-    class Visitante {
-        -number id
-        -string nome
-        -string cpf
-        -string email
-        -string nascimento
-        -Ingresso ingresso
-        -string cartaoBandeira
-        -string cartaoFinal
-        +idade(hoje) number
-    }
-
-    class Atracao {
-        -number id
-        -string nome
-        -string tipo
-        -number capacidade
-        -number idadeMinima
-        -boolean filaVip
-        -ListaDuplamenteEncadeada sessoes
-        +buscarSessao(horario) Sessao
-        +concedePrioridadeA(visitante) boolean
-    }
-
-    class Sessao {
-        -string horario
-        -FilaVirtual fila
-    }
-
-    class Reserva {
-        -number id
-        -Visitante visitante
-        -Atracao atracao
-        -string horario
-        -boolean prioritaria
-        -string entrouEm
-        -string embarcouEm
-        -string status
-        +concluir(dataHora)
-    }
-
-    class FilaVirtual {
-        -No ultimoVip
-        +enfileirar(reserva)
-        +desenfileirar() Reserva
-        +posicaoDe(visitante) number
-        +buscarPorVisitante(visitante) No
-        +sairDaFila(visitante) Reserva
-        +proximos(n)
-    }
-
-    class ListaDuplamenteEncadeada {
-        -No inicio
-        -No fim
-        -number tamanho
-        +inserirNoInicio(dado)
-        +inserirNoFim(dado)
-        +inserirApos(no, dado)
-        +remover(no)
-        +removerPrimeiro()
-        +buscar(predicado) No
-        +alterar(no, dado)
-        +mover(no, posicao)
-        +ordenar(comparador)
-        +percorrer(callback)
-    }
-
-    class No {
-        +dado
-        +proximo No
-        +anterior No
-        +lista ListaDuplamenteEncadeada
-    }
-
-    class Ingresso {
-        <<abstract>>
-        +string tipo
-        +prioridade() number
-        +preco() number
-        +exigeCartao() boolean
-        +criar(tipo)$ Ingresso
-    }
-
-    class IngressoNormal {
-        +prioridade() 0
-        +preco() 100
-    }
-
-    class IngressoVip {
-        +prioridade() 1
-        +preco() 200
-        +exigeCartao() true
-    }
-
-    Parque "1" --> "*" Visitante : lista
-    Parque "1" --> "*" Atracao : lista
-    Parque "1" --> "*" Reserva : historico
-    Atracao "1" --> "*" Sessao : sessoes
-    Sessao "1" --> "1" FilaVirtual : fila
-    FilaVirtual --|> ListaDuplamenteEncadeada
-    ListaDuplamenteEncadeada "1" --> "*" No : contém
-    Reserva "1" --> "1" Visitante
-    Reserva "1" --> "1" Atracao
-    Visitante "1" --> "1" Ingresso
-    IngressoNormal --|> Ingresso
-    IngressoVip --|> Ingresso
 ```
+atracoes                      visitantes                    reservas
+─────────────────────         ─────────────────────         ──────────────────────────
+id            PK              id              PK            id            PK
+nome                          nome                          visitante_id  FK → visitantes
+tipo                          cpf             UNIQUE        atracao_id    FK → atracoes
+capacidade                    email           UNIQUE        horario       "HH:MM"
+idade_minima                  nascimento                    vip           prioridade da reserva
+horarios      "09:00,14:00"   ingresso        normal|vip    status        aguardando|concluida
+vip           fila VIP        cartao_bandeira               entrou_em     data e hora
+                              cartao_final                  embarcou_em   data e hora
+```
+
+As tabelas são só o formato de gravação. Em execução, os dados vivem nas listas, e cada classe tem `paraDados()` para virar um objeto simples antes de ir ao banco.
+
+## Testes
+
+```bash
+npm test
+```
+
+Cobrem a lista (inserção, remoção, busca, movimentação e ordenação), a fila (inclusive um teste aleatório contra um modelo simples), os modelos, as regras do `Parque`, as estatísticas e a persistência (ida e volta com SQLite, inclusive um banco no esquema antigo).
 
 ## Decisões de projeto
 
-- **Listas encadeadas em vez de banco de dados.** O documento da disciplina pedia que as listas encadeadas tivessem papel relevante no armazenamento de dados. A gente migrou tudo do SQLite para listas em memória, com IDs gerados por contador.
-- **Singleton para o Parque.** Uma única instância (`module.exports = new Parque()`) garante que todos os módulos vejam o mesmo estado e que os IDs não colidam.
-- **Fábrica para o Ingresso.** `Ingresso.criar(tipo)` devolve a instância correta. A prioridade vem de `ingresso.prioridade()` — não há `if (ingresso === 'vip')` espalhado pelo código.
-- **Relógio injetável.** O `Parque` recebe um `Relogio` no construtor. Isso permite testar com hora fixa (`Relogio.fixo('2026-10-10 14:00:00')`) e manter o modo demo (`npm run demo`).
-- **Seletor no lugar de login.** O painel foi pensado para uso interno de quem trabalha no parque. O visitante escolhido fica guardado em um cookie.
-- **Cartão simulado.** Mesmo em um projeto acadêmico, não se guarda o número completo do cartão. Só a bandeira e os 4 últimos dígitos.
-- **Lógica separada da interface.** Regras de negócio vivem nas classes (em `models/`). O `server.js` só repassa dados. As views só exibem.
+- **Listas como núcleo, banco como persistência.** O professor exige listas encadeadas para os dados principais e uma ferramenta de persistência. O `Parque` opera nas listas, e o repositório só grava e recarrega.
+- **Orientação a objetos.** Encapsulamento (campos privados com `#`), herança (`FilaVirtual` estende a lista), polimorfismo (`Ingresso`), injeção de dependência (`Relogio` e `Repositorio`) e um invariante protegido pela própria classe (a ordem da fila).
+- **SQLite em vez de MySQL.** Banco relacional sem servidor, o que elimina o risco de "levantar uma base" na máquina da apresentação.
+- **Seletor no lugar de login.** O painel foi pensado para uso interno de quem trabalha no parque. O visitante escolhido fica em um cookie.
+- **Cartão simulado.** Só a bandeira e os 4 últimos dígitos são gravados.
+- **Hora real do sistema.** Horários encerrados bloqueiam a entrada e definem a sessão chamada. O modo `demo` desliga isso.
 
 ## Limitações conhecidas
 
-- **As filas ficam em memória.** Se o servidor reiniciar, as filas se perdem. No modo `npm run demo`, o `dados-exemplo.js` repopula tudo a cada inicialização.
-- **Não há autenticação.** Qualquer pessoa que acesse o sistema pode escolher qualquer visitante e usar o painel do parque.
+- **Sem autenticação.** Qualquer pessoa que acesse o sistema pode escolher qualquer visitante e usar o painel do parque.
+- **Um único processo.** As filas vivem na memória do servidor, então não dá para rodar várias instâncias ao mesmo tempo.
+- **Falha do banco.** Se a gravação falhar, o erro sobe, mas a memória já mudou. Uma transação resolveria, mas é exagero para este escopo.
 - **Pagamento e cartão são simulados.**
-- **Um único processo.** Como as filas vivem na memória do processo, não dá para rodar várias instâncias do servidor ao mesmo tempo.
-- **Sem persistência em arquivo.** Foi uma decisão consciente para o escopo acadêmico; em produção, seria interessante salvar as listas em JSON.
+- **Sair da fila e trocar de horário** estão no `Parque`, mas ainda não têm botão nas telas.
 
 ## Equipe
 

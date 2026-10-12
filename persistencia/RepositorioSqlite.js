@@ -48,7 +48,7 @@ class RepositorioSqlite extends Repositorio {
     const d = visitante.paraDados();
     this.#db.prepare(`INSERT INTO visitantes (id, nome, cpf, email, nascimento, ingresso, cartao_bandeira, cartao_final)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run(d.id, d.nome, d.cpf, d.email, d.nascimento, d.ingresso, d.cartao?.bandeira ?? null, d.cartao?.final ?? null);
+      .run(d.id, d.nome, d.cpf, d.email.toLowerCase(), d.nascimento, d.ingresso, d.cartao?.bandeira ?? null, d.cartao?.final ?? null);
   }
 
   salvarReserva(reserva) {
@@ -78,7 +78,7 @@ class RepositorioSqlite extends Repositorio {
       idadeMinima: l.idade_minima, horarios: l.horarios, filaVip: l.vip === 1
     }));
     const visitantes = this.#db.prepare('SELECT * FROM visitantes ORDER BY id').all().map(l => ({
-      id: l.id, nome: l.nome, cpf: l.cpf, email: l.email, nascimento: l.nascimento, ingresso: l.ingresso,
+      id: l.id, nome: l.nome, cpf: l.cpf, email: String(l.email).toLowerCase(), nascimento: l.nascimento, ingresso: l.ingresso,
       cartao: l.cartao_final ? { bandeira: l.cartao_bandeira, final: l.cartao_final } : null
     }));
     // Mais antigas primeiro (data/hora de entrada e depois id): a ordem em que as filas são refeitas.

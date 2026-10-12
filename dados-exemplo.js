@@ -6,18 +6,32 @@
  * Popula o Parque com atrações, visitantes e reservas de exemplo,
  * usando só a API pública do Parque (as mesmas regras do sistema).
  *
- * Como o Parque é um singleton EM MEMÓRIA, este arquivo precisa
- * rodar no MESMO processo que o server, e em modo demo: as filas
- * de exemplo usam horários que podem já ter passado.
+ * Tudo o que é cadastrado vai para o banco (SQLite), então o server
+ * encontra esses dados quando inicia. As filas de exemplo usam horários
+ * que podem já ter passado, por isso o seed roda em modo --sem-hora.
  *
  * Uso:
- *   npm run demo    → sobe o server + dados-exemplo no mesmo processo
+ *   npm run seed          → cria os dados de exemplo (se o banco estiver vazio)
+ *   npm run seed:limpo    → apaga o banco e cria tudo de novo
  * ============================================================
  */
+const fs = require('node:fs');
+const { ARQUIVO_DB } = require('./config');
+
+// A limpeza precisa acontecer ANTES de o Parque abrir o banco.
+if (process.argv.includes('--limpar')) {
+  for (const sufixo of ['', '-journal', '-wal', '-shm']) fs.rmSync(ARQUIVO_DB + sufixo, { force: true });
+  console.log('Banco limpo.');
+}
+
 const parque = require('./parque-instancia');
 
 if (!parque.relogio.semHora) {
-  throw new Error('Os dados de exemplo usam horários que podem já ter passado: rode com "npm run demo" (--sem-hora).');
+  throw new Error('Os dados de exemplo usam horários que podem já ter passado: rode com "npm run seed" (--sem-hora).');
+}
+if (parque.atracoes.tamanho > 0 || parque.visitantes.tamanho > 0) {
+  console.log('O banco já tem dados, nada foi criado. Para recomeçar do zero: npm run seed:limpo');
+  process.exit(0);
 }
 
 // Regras esperadas nos dados de exemplo (idade mínima, fila repetida) não precisam de aviso.
