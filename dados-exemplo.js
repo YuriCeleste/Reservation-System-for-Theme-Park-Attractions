@@ -3,17 +3,32 @@
  *  DADOS DE EXEMPLO
  * ============================================================
  *
- * Popula o Parque com atrações, visitantes e reservas de exemplo.
+ * Popula o Parque com atrações, visitantes e reservas de exemplo,
+ * usando só a API pública do Parque (as mesmas regras do sistema).
  *
  * Como o Parque é um singleton EM MEMÓRIA, este arquivo precisa
- * rodar no MESMO processo que o server.
+ * rodar no MESMO processo que o server, e em modo demo: as filas
+ * de exemplo usam horários que podem já ter passado.
  *
  * Uso:
  *   npm run demo    → sobe o server + dados-exemplo no mesmo processo
- *   npm run seed    → executa só o arquivo (não afeta o server)
  * ============================================================
  */
-const parque = require('./models/Parque');
+const parque = require('./parque-instancia');
+
+if (!parque.relogio.semHora) {
+  throw new Error('Os dados de exemplo usam horários que podem já ter passado: rode com "npm run demo" (--sem-hora).');
+}
+
+// Regras esperadas nos dados de exemplo (idade mínima, fila repetida) não precisam de aviso.
+function tentar(descricao, acao) {
+  try {
+    return acao();
+  } catch (erro) {
+    if (!/Idade mínima|já está/.test(erro.message)) console.warn(`Aviso: ${descricao}: ${erro.message}`);
+    return null;
+  }
+}
 
 // ==========================================================
 //  ATRAÇÕES
@@ -47,42 +62,35 @@ const VISITANTES = [
 VISITANTES.forEach(([nome, nascimento, ingresso], i) => {
   const cpf = String(11122233300 + i);
   const email = nome.split(' ')[0].toLowerCase() + '@email.com';
-  const cartaoNumero = ingresso === 'vip' ? '4242424242424242' : null;
-  parque.cadastrarVisitante({ nome, cpf, email, nascimento, ingresso, cartaoNumero });
+  const cartao = ingresso === 'vip' ? { numero: '4242424242424242' } : undefined;
+  parque.cadastrarVisitante({ nome, cpf, email, nascimento, ingresso, cartao });
 });
 
 // ==========================================================
 //  RESERVAS (histórico + filas)
 // ==========================================================
-const HORAS = { 1: '18:00', 2: '18:00', 3: '20:00', 4: '21:00' };
+const MANHA = { 1: '09:00', 2: '09:00', 3: '10:00', 4: '11:00' };
+const NOITE = { 1: '18:00', 2: '18:00', 3: '20:00', 4: '21:00' };
 
+// Em quais atrações cada visitante entra (mesma regra de antes).
+const atracoesDo = vid => [1, 2, 3, 4].filter(a => (vid + a) % 3 !== 0);
+
+// 1) Histórico: os visitantes de id par já brincaram de manhã na primeira atração deles.
+//    Entram na fila da manhã e a atração é chamada (embarcar), como no uso real.
+const brincaram = [];
+for (let vid = 2; vid <= 9; vid += 2) {
+  const aid = atracoesDo(vid)[0];
+  if (tentar(`visitante ${vid} na atração ${aid}`, () => parque.entrarNaFila(vid, aid, MANHA[aid]))) {
+    if (!brincaram.includes(aid)) brincaram.push(aid);
+  }
+}
+brincaram.forEach(aid => parque.embarcar(aid));
+
+// 2) Filas da noite: todos entram nas filas das suas atrações.
 for (let vid = 1; vid <= 9; vid++) {
-  const visitante = parque.buscarVisitante(vid);
-  if (!visitante) continue;
-
-  const atracoesDoVisitante = [1, 2, 3, 4].filter(a => (vid + a) % 3 !== 0);
-
-  atracoesDoVisitante.forEach((aid, k) => {
-    const atracao = parque.buscarAtracao(aid);
-    if (!atracao) return;
-
-    const horario = HORAS[aid];
-    const feito = k < 1 && vid % 2 === 0;
-
-    const erro = parque.entrarNaFila(vid, aid, horario);
-    if (erro) {
-      if (!erro.includes('Idade mínima') && !erro.includes('já está')) {
-        console.warn(`Aviso: ${visitante.nome} não entrou em ${atracao.nome}: ${erro}`);
-      }
-      return;
-    }
-
-    if (feito) {
-      const sessao = atracao.buscarSessao(horario);
-      const reserva = sessao.fila.sairDaFila(visitante);
-      if (reserva) reserva.concluir(parque.relogio.agora());
-    }
-  });
+  for (const aid of atracoesDo(vid)) {
+    tentar(`visitante ${vid} na atração ${aid}`, () => parque.entrarNaFila(vid, aid, NOITE[aid]));
+  }
 }
 
-console.log('Dados de exemplo criados no Parque.');
+console.log(`Dados de exemplo criados no Parque (${parque.visitantes.tamanho} visitantes, ${parque.historico.tamanho} reservas).`);

@@ -44,23 +44,28 @@
             <td><%= m.horario.replace(':', 'h') %></td>
             <td><%= m.posicao %>ª posição</td>
             <td>
-              <form method="post" action="/visitantes/sair-fila" style="display:inline">
-                <input type="hidden" name="atracao_id" value="<%= m.atracao_id %>">
-                <input type="hidden" name="horario" value="<%= m.horario %>">
-                <button class="pill">SAIR</button>
-              </form>
-              <% if (m.outrosHorarios.length) { %>
-                <form method="post" action="/visitantes/trocar-horario" style="display:inline">
+              <div class="acoes-fila">
+                <% if (m.outrosHorarios.length) { %>
+                  <form method="post" action="/visitantes/trocar-horario" class="acao-trocar">
+                    <input type="hidden" name="atracao_id" value="<%= m.atracao_id %>">
+                    <input type="hidden" name="horario_atual" value="<%= m.horario %>">
+                    <label for="novo-horario-<%= m.atracao_id %>-<%= m.horario.replace(':', '') %>">Trocar horário para</label>
+                    <div class="controle-troca">
+                      <select id="novo-horario-<%= m.atracao_id %>-<%= m.horario.replace(':', '') %>" name="novo_horario">
+                        <% m.outrosHorarios.forEach(h => { %>
+                          <option value="<%= h %>"><%= h.replace(':', 'h') %></option>
+                        <% }) %>
+                      </select>
+                      <button class="pill">Trocar horário</button>
+                    </div>
+                  </form>
+                <% } %>
+                <form method="post" action="/visitantes/sair-fila" class="acao-sair">
                   <input type="hidden" name="atracao_id" value="<%= m.atracao_id %>">
-                  <input type="hidden" name="horario_atual" value="<%= m.horario %>">
-                  <select name="novo_horario" style="width:auto;display:inline-block">
-                    <% m.outrosHorarios.forEach(h => { %>
-                      <option value="<%= h %>"><%= h.replace(':', 'h') %></option>
-                    <% }) %>
-                  </select>
-                  <button class="pill">TROCAR</button>
+                  <input type="hidden" name="horario" value="<%= m.horario %>">
+                  <button class="pill">Sair da fila</button>
                 </form>
-              <% } %>
+              </div>
             </td>
           </tr>
         <% }) %>

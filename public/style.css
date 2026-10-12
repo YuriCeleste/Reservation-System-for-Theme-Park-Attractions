@@ -305,6 +305,13 @@ th {
 }
 th, td { padding: .5rem; border: 1px solid #333; text-align: center; }
 td form { margin: 0; }
+.acoes-fila { display: grid; gap: .55rem; min-width: 16rem; text-align: left; }
+.acao-trocar label { margin: 0 0 .25rem; color: #333; font-size: .8rem; }
+.controle-troca { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .4rem; }
+.controle-troca select { min-width: 0; }
+.controle-troca .pill { white-space: nowrap; }
+.acao-sair { border-top: 1px solid #ccc; padding-top: .45rem; text-align: right; }
+.acao-sair .pill { background: #5d2525; }
 
 /* ===== Blocos de atração (painel) ===== */
 .atr { background: #f8f8f8; border-radius: 6px; padding: 1rem; margin: 1rem 0; }
@@ -405,6 +412,8 @@ main.cinza.fundo-creditos h2:hover {
 
 @media (max-width: 700px) {
   .metricas, .duas { grid-template-columns: 1fr; }
+  .controle-troca { grid-template-columns: 1fr; }
+  .acao-sair { text-align: left; }
   .nav a.on { flex-basis: auto; }
   .hero-logo { width: min(70vw, 280px); }
   .hero h1 { font-size: clamp(2rem, 10vw, 3.5rem); }

@@ -50,6 +50,16 @@ class Atracao {
     return no ? no.dado : null;
   }
 
+  /** Dados simples da atração, no mesmo formato que o construtor aceita (usado para persistir). */
+  paraDados() {
+    let horarios = '';
+    this.#sessoes.percorrer((sessao, i) => { horarios += (i ? ',' : '') + sessao.horario; });
+    return {
+      id: this.#id, nome: this.#nome, tipo: this.#tipo, capacidade: this.#capacidade,
+      idadeMinima: this.#idadeMinima, horarios, filaVip: this.#filaVip
+    };
+  }
+
   get id()          { return this.#id; }
   get nome()        { return this.#nome; }
   get tipo()        { return this.#tipo; }

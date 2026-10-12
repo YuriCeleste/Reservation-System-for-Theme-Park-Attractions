@@ -23,10 +23,18 @@ class Visitante {
 
     const tipoIngresso = Ingresso.criar(ingresso || 'normal');
     if (tipoIngresso.exigeCartao()) {
-      const numero = (cartao?.numero || '').replace(/\D/g, '');
-      if (!/^\d{13,19}$/.test(numero)) throw new Error('O ingresso VIP exige um cartão de crédito.');
-      this.#cartaoBandeira = ({ 4: 'Visa', 5: 'Mastercard' }[numero[0]]) || 'Outro';
-      this.#cartaoFinal = numero.slice(-4); // só os 4 últimos dígitos ficam guardados
+      // Cartão já processado ({ bandeira, final }): vem da persistência, quando o visitante é recarregado.
+      const processado = cartao && (cartao.bandeira !== undefined || cartao.final !== undefined);
+      if (processado) {
+        if (!cartao.bandeira || !/^\d{4}$/.test(cartao.final)) throw new Error('Cartão salvo inválido.');
+        this.#cartaoBandeira = cartao.bandeira;
+        this.#cartaoFinal = cartao.final;
+      } else {
+        const numero = (cartao?.numero || '').replace(/\D/g, '');
+        if (!/^\d{13,19}$/.test(numero)) throw new Error('O ingresso VIP exige um cartão de crédito.');
+        this.#cartaoBandeira = ({ 4: 'Visa', 5: 'Mastercard' }[numero[0]]) || 'Outro';
+        this.#cartaoFinal = numero.slice(-4); // só os 4 últimos dígitos ficam guardados
+      }
     }
 
     this.#id = id;
@@ -43,6 +51,15 @@ class Visitante {
     const [anoHoje, mesHoje, diaHoje] = hoje.split('-').map(Number);
     const fezAniversario = mesHoje > mes || (mesHoje === mes && diaHoje >= dia);
     return anoHoje - ano - (fezAniversario ? 0 : 1);
+  }
+
+  /** Dados simples do visitante, no formato que o construtor aceita (usado para persistir). */
+  paraDados() {
+    return {
+      id: this.#id, nome: this.#nome, cpf: this.#cpf, email: this.#email, nascimento: this.#nascimento,
+      ingresso: this.#ingresso.tipo,
+      cartao: this.#cartaoFinal ? { bandeira: this.#cartaoBandeira, final: this.#cartaoFinal } : null
+    };
   }
 
   static #hojeLocal() {

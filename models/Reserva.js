@@ -39,6 +39,26 @@ class Reserva {
     this.#embarcouEm = dataHora;
   }
 
+  /**
+   * Passa a reserva para outro horário da mesma atração. Ela entra de novo na fila,
+   * então a data/hora de entrada passa a ser a da troca (vem do Relogio).
+   */
+  mudarHorario(novoHorario, dataHora) {
+    if (this.#status === 'concluida') throw new Error('Esta reserva já foi concluída.');
+    if (!HORARIO.test(novoHorario)) throw new Error('Horário no formato HH:MM.');
+    if (!DATA_HORA.test(dataHora)) throw new Error('Data/hora de entrada inválida.');
+    this.#horario = novoHorario;
+    this.#entrouEm = dataHora;
+  }
+
+  /** Dados simples da reserva, com os ids de visitante e atração (usado para persistir). */
+  paraDados() {
+    return {
+      id: this.#id, visitanteId: this.#visitante.id, atracaoId: this.#atracao.id, horario: this.#horario,
+      prioritaria: this.#prioritaria, status: this.#status, entrouEm: this.#entrouEm, embarcouEm: this.#embarcouEm
+    };
+  }
+
   get id()          { return this.#id; }
   get visitante()   { return this.#visitante; }
   get atracao()     { return this.#atracao; }
